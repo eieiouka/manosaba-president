@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800&family=Noto+Sans+JP:wght@400;500;600;700;800&family=Zen+Old+Mincho:wght@600;700;900&display=swap");
 
 html,
 body,
@@ -58,21 +58,23 @@ button {
   height: 1220px;
   min-width: 0;
   min-height: 0;
-  padding: 16px;
+  padding: 0;
 
-  display: flex;
-  flex-direction: column;
+  display: block;
 
   transform-origin: top left;
   container-type: inline-size;
 }
 
 .gameHeader {
-  width: 100%;
-  flex: 0 0 auto;
-  margin:
-    0 auto
-    clamp(8px, 1.333cqw, 20px);
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  left: 16px;
+
+  width: auto;
+  height: 75px;
+  margin: 0;
 
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -80,6 +82,13 @@ button {
 }
 
 .gameTitle {
+  height: 75px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
   text-align: center;
 }
 
@@ -87,56 +96,49 @@ button {
 .gameTitle h1,
 .gameTitle span {
   margin: 0;
+  padding: 0;
 }
 
 .gameTitle p {
   color: rgba(255, 255, 255, 0.65);
 
-  font-size:
-    clamp(7px, 0.733cqw, 11px);
-  letter-spacing:
-    clamp(2px, 0.267cqw, 4px);
+  font-size: 11px;
+  line-height: 11px;
+  letter-spacing: 4px;
 }
 
 .gameTitle h1 {
-  margin:
-    clamp(1px, 0.133cqw, 2px)
-    0
-    0;
+  margin-top: 2px;
 
   color: #f3dfaa;
   font-family: "Cinzel", serif;
-  font-size:
-    clamp(26px, 2.933cqw, 44px);
+  font-size: 44px;
   font-weight: 500;
-  letter-spacing:
-    clamp(2px, 0.333cqw, 5px);
+  line-height: 44px;
+  letter-spacing: 5px;
 }
 
 .gameTitle span {
   color: #e4cb86;
 
-  font-size:
-    clamp(11px, 1.067cqw, 16px);
+  font-size: 16px;
+  line-height: 18px;
 }
 
-.hubButton {
+.hubButton,
+.restartButton {
   width: fit-content;
-
-  padding:
-    clamp(6px, 0.667cqw, 10px)
-    clamp(10px, 1.2cqw, 18px);
+  padding: 10px 18px;
 
   border:
     1px solid rgba(227, 200, 127, 0.7);
-  border-radius:
-    clamp(6px, 0.667cqw, 10px);
+  border-radius: 10px;
 
   color: #f4e3b0;
   background: rgba(24, 10, 15, 0.72);
 
-  font-size:
-    clamp(11px, 1.067cqw, 16px);
+  font-size: 16px;
+  line-height: 24px;
 
   cursor: pointer;
 
@@ -145,13 +147,21 @@ button {
     transform 0.2s ease;
 }
 
-.hubButton:hover {
+.hubButton:hover,
+.restartButton:hover {
   background: rgba(76, 29, 41, 0.95);
   transform: translateY(-1px);
 }
 
-.roundDisplay {
+.restartButton {
   justify-self: end;
+}
+
+.roundDisplay {
+  position: absolute;
+  top: 18px;
+  right: 28px;
+  z-index: 10;
 
   display: flex;
   flex-direction: column;
@@ -162,26 +172,31 @@ button {
 }
 
 .roundDisplay span {
-  font-size:
-    clamp(7px, 0.733cqw, 11px);
-  letter-spacing:
-    clamp(2px, 0.267cqw, 4px);
+  font-size: 27.5px;
+  line-height: 35px;
+  letter-spacing: 10px;
 }
 
 .roundDisplay strong {
-  font-size:
-    clamp(14px, 1.467cqw, 22px);
+  font-size: 55px;
+  line-height: 65px;
 }
 
 .gameTable {
-  position: relative;
+  position: absolute;
+  top: 111px;
+  left: 16px;
 
-  width: 100%;
-  min-height: 0;
-  flex: 1 1 auto;
+  width: 1468px;
+  height: 1093px;
+  min-width: 1468px;
+  min-height: 1093px;
+  max-width: 1468px;
+  max-height: 1093px;
 
-  margin: 0 auto;
+  margin: 0;
   padding: 118px 88px 18px;
+  overflow: visible;
 
   border:
     2px solid rgba(216, 186, 106, 0.8);
@@ -203,54 +218,115 @@ button {
   position: absolute;
   z-index: 5;
 
-  display: flex;
-  align-items: center;
+  display: grid;
+  align-items: start;
 
-  min-width: 245px;
-  gap: 12px;
+  gap: 8px;
 }
 
+/* 橘シェリー */
+
 .playerTop {
-  top: 18px;
+  top: 8px;
   left: 50%;
 
-  flex-direction: column;
+  width: 405px;
+  height: 250px;
+
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  grid-template-rows: 132px 108px;
+  grid-template-areas:
+    "avatar information"
+    "hand hand";
+
+  align-items: start;
+  column-gap: 12px;
+  row-gap: 10px;
 
   transform: translateX(-50%);
 }
 
+/* 桜羽エマ */
 .playerLeft {
-  top: 175px;
+  top: 310px;
   left: 28px;
+
+  width: 405px;
+
+  grid-template-columns: 86px minmax(0, 1fr);
+  grid-template-rows: 132px 108px;
+  grid-template-areas:
+    "avatar information"
+    "hand hand";
+
+  column-gap: 12px;
+  row-gap: 10px;
 }
 
+/* 遠野ハンナ */
 .playerRight {
-  top: 175px;
+  top: 310px;
   right: 28px;
 
-  flex-direction: row-reverse;
-  text-align: right;
+  width: 405px;
+
+  grid-template-columns: minmax(0, 1fr) 86px;
+  grid-template-rows: 132px 108px;
+  grid-template-areas:
+    "information avatar"
+    "hand hand";
+
+  column-gap: 12px;
+  row-gap: 10px;
+}
+
+.playerTop .playerPortrait,
+.playerLeft .playerPortrait,
+.playerRight .playerPortrait {
+  grid-area: avatar;
+
+  align-self: center;
+  justify-self: center;
+}
+
+.playerTop .playerInformation,
+.playerLeft .playerInformation,
+.playerRight .playerInformation {
+  grid-area: information;
+
+  width: 100%;
+  height: 100%;
+}
+
+.playerTop .opponentHand,
+.playerLeft .opponentHand,
+.playerRight .opponentHand {
+  grid-area: hand;
+
+  align-self: end;
+  justify-self: center;
 }
 
 .playerPortrait,
 .yourPortrait {
-  display: grid;
+  display: block;
   flex: 0 0 auto;
-  place-items: center;
 
   border: 2px solid #b6944f;
   border-radius: 50%;
 
-  background:
-    radial-gradient(
-      circle at 50% 35%,
-      #72303d,
-      #261019 70%
-    );
+  object-fit: cover;
+  object-position: center;
+
+  background: rgba(255, 255, 255, 0.08);
 
   box-shadow:
     0 0 0 4px rgba(15, 7, 11, 0.9),
     0 0 18px rgba(220, 169, 67, 0.25);
+
+  pointer-events: none;
+  user-select: none;
 }
 
 .playerPortrait {
@@ -258,31 +334,35 @@ button {
   height: 74px;
 }
 
-.playerPortrait span,
-.yourPortrait span {
-  color: rgba(245, 222, 173, 0.8);
-  font-family: "Cinzel", serif;
-  font-size: 10px;
-  letter-spacing: 0.08em;
-}
-
 .playerInformation {
-  min-width: 170px;
-  padding: 8px 12px;
+  position: relative;
+
+  min-width: 0;
+  padding: 6px 8px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 
   border:
     1px solid rgba(208, 168, 82, 0.38);
-  border-radius: 5px;
+  border-radius: 8px;
 
   background: rgba(10, 5, 8, 0.82);
+
+  text-align: center;
 }
 
 .playerNameRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  width: 100%;
 
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 2px;
 }
 
 .playerName,
@@ -298,104 +378,161 @@ button {
   font-weight: 700;
 }
 
+.playerName {
+  font-size: 32px;
+  line-height: 38px;
+  letter-spacing: -0.04em;
+  white-space: nowrap;
+}
+
 .playerRank {
-  color: #c6a75f;
-  font-size: 11px;
+  position: relative;
+
+  width: min(160px, calc(100% - 14px));
+  padding: 1px 0 5px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-top:
+    2px solid rgba(235, 201, 109, 0.75);
+  border-bottom:
+    2px solid rgba(235, 201, 109, 0.75);
+
+  color: #f3d67f;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(202, 151, 50, 0.22) 25%,
+      rgba(232, 192, 95, 0.3) 50%,
+      rgba(202, 151, 50, 0.22) 75%,
+      transparent
+    );
+
+  font-family:
+    "Zen Old Mincho",
+    "Noto Sans JP",
+    serif;
+
+  font-size: 60px;
+  font-weight: 800;
+  line-height: 68px;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+
+  text-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.95),
+    0 0 8px rgba(255, 215, 105, 0.5),
+    0 0 18px rgba(211, 153, 44, 0.3);
 }
 
 .cardCountDisplay {
+  position: absolute;
+  right: 8px;
+  bottom: 4px;
+
   display: flex;
   align-items: baseline;
 
-  margin-top: 5px;
-  gap: 5px;
+  gap: 4px;
 
   color: #a99a85;
-  font-size: 11px;
+  font-size: 10px;
 }
 
 .cardCountDisplay strong {
   color: #f1d995;
+
   font-family: "Cinzel", serif;
-  font-size: 22px;
+  font-size: 19px;
   line-height: 1;
 }
 
-.playerTop .playerNameRow,
-.playerTop .cardCountDisplay {
-  justify-content: center;
+/* 相手の裏向き手札 */
+.opponentHand {
+  --opponent-card-width: 72px;
+  --opponent-card-height: 108px;
+
+  position: relative;
+
+  width: 390px;
+  height: var(--opponent-card-height);
+  flex: 0 0 390px;
+
+  overflow: visible;
 }
 
-.statusArea {
+.opponentHandTrack {
+  position: relative;
+
+  width:
+    calc(
+      100% - var(--opponent-card-width)
+    );
+
+  height: var(--opponent-card-height);
+  margin-right: var(--opponent-card-width);
+}
+
+.opponentCard {
   position: absolute;
-  z-index: 6;
-  top: 145px;
+  bottom: 0;
+
+  left:
+    calc(
+      var(--opponent-index) *
+      var(--opponent-step)
+    );
+
+  width: var(--opponent-card-width);
+  height: var(--opponent-card-height);
+
+  padding: 0;
+  overflow: hidden;
+
+  border:
+    1px solid rgba(224, 193, 114, 0.4);
+  border-radius: 6px;
+
+  background: #4b1522;
+
+  box-shadow:
+    0 5px 10px rgba(0, 0, 0, 0.52);
+}
+
+.opponentCard img {
+  display: block;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: fill;
+  pointer-events: none;
+  user-select: none;
+}
+
+.opponentHand[data-count="1"] .opponentCard {
   left: 50%;
-
-  display: flex;
-  align-items: center;
-
-  gap: 14px;
-
   transform: translateX(-50%);
-}
-
-.turnBadge {
-  padding: 6px 22px;
-
-  border:
-    1px solid rgba(225, 190, 107, 0.5);
-  border-radius: 999px;
-
-  background: rgba(9, 5, 7, 0.84);
-}
-
-.turnBadge span {
-  margin-right: 9px;
-
-  color: #bba66f;
-  font-family: "Cinzel", serif;
-  font-size: 10px;
-  letter-spacing: 0.15em;
-}
-
-.turnBadge strong {
-  color: #f0dfb5;
-  font-size: 13px;
-}
-
-.ruleBadges {
-  display: flex;
-  gap: 6px;
-}
-
-.ruleBadges span {
-  padding: 5px 9px;
-
-  border:
-    1px solid rgba(172, 141, 76, 0.35);
-  border-radius: 3px;
-
-  color: #cdbc98;
-  background: rgba(9, 5, 7, 0.72);
-
-  font-size: 10px;
 }
 
 .fieldArea {
   position: absolute;
   z-index: 5;
-  top: 290px;
+  top: 285px;
   left: 50%;
 
   display: grid;
-  width: 310px;
-  height: 245px;
+  width: 540px;
+  height: 420px;
   place-items: center;
 
   border:
-    1px solid rgba(218, 179, 91, 0.28);
-  border-radius: 18px;
+    2px solid rgba(218, 179, 91, 0.28);
+  border-radius: 30px;
 
   background: rgba(12, 6, 9, 0.22);
 
@@ -404,47 +541,50 @@ button {
 
 .fieldDecoration {
   position: absolute;
-  inset: 10px;
+  inset: 18px;
 
   display: grid;
   place-items: end center;
 
   border:
     1px solid rgba(213, 169, 74, 0.13);
-  border-radius: 13px;
+  border-radius: 22px;
 }
 
 .fieldDecoration span {
-  margin-bottom: 8px;
+  margin-bottom: 15px;
 
   color: rgba(211, 174, 96, 0.28);
+
   font-family: "Cinzel", serif;
-  font-size: 9px;
+  font-size: 50px;
+  font-weight: 600;
   letter-spacing: 0.3em;
 }
 
 .fieldCards {
   position: relative;
 
-  width: 155px;
-  height: 160px;
+  width: 270px;
+  height: 276px;
+
+  transform: translateY(-20px);
 }
 
 .fieldCard {
   position: absolute;
   top: 0;
-  left: 28px;
 
-  width: 104px;
-  height: 156px;
+  width: 210px;
+  height: 315px;
+
   overflow: hidden;
 
-  border-radius: 7px;
+  border-radius: 12px;
 
-  background: #f8f5eb;
+  background: transparent;
 
-  box-shadow:
-    0 7px 15px rgba(0, 0, 0, 0.45);
+  box-shadow: none;
 }
 
 .fieldCard img {
@@ -460,25 +600,29 @@ button {
 
 .fieldCardLeft {
   transform:
-    translateX(-19px)
+    translateX(-32px)
     rotate(-5deg);
 }
 
 .fieldCardRight {
   transform:
-    translateX(19px)
+    translateX(32px)
     rotate(5deg);
 }
 
 .fieldMessage {
   position: absolute;
-  bottom: -34px;
+  right: 0;
+  bottom: 12px;
+  left: 0;
 
   margin: 0;
 
   color: #e1c171;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: 0.15em;
+  text-align: center;
 }
 
 .yourArea {
@@ -501,38 +645,138 @@ button {
 }
 
 .yourInformation {
-  display: flex;
-  align-items: center;
+  width: 180px;
+  height: 220px;
+  padding: 10px 4px;
 
-  padding: 9px 10px;
-  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 6px;
 
   border:
     1px solid rgba(208, 168, 82, 0.38);
-  border-radius: 5px;
+  border-radius: 8px;
 
   background: rgba(10, 5, 8, 0.82);
+
+  text-align: center;
 }
 
 .yourPortrait {
   width: 66px;
   height: 66px;
+  flex: 0 0 66px;
 }
 
 .yourText {
+  width: 100%;
   min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .yourName {
+  margin: 0;
+
+  color: #f0dfb5;
+
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 38px;
+  letter-spacing: -0.04em;
   white-space: nowrap;
 }
 
 .yourRank {
-  margin-top: 3px;
+  position: relative;
 
-  color: #dfb954;
-  font-size: 12px;
-  font-weight: 700;
+  width: 160px;
+  margin: 5px 0 0;
+  padding: 7px 0 10px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-top:
+    2px solid rgba(235, 201, 109, 0.75);
+  border-bottom:
+    2px solid rgba(235, 201, 109, 0.75);
+
+  color: #f3d67f;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(202, 151, 50, 0.22) 25%,
+      rgba(232, 192, 95, 0.3) 50%,
+      rgba(202, 151, 50, 0.22) 75%,
+      transparent
+    );
+
+  font-family:
+    "Zen Old Mincho",
+    "Noto Sans JP",
+    serif;
+
+  font-size: 60px;
+  font-weight: 800;
+  line-height: 68px;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+
+  text-shadow:
+    0 2px 3px rgba(0, 0, 0, 0.95),
+    0 0 8px rgba(255, 215, 105, 0.5),
+    0 0 18px rgba(211, 153, 44, 0.3);
+}
+
+.playerRank::before,
+.playerRank::after,
+.yourRank::before,
+.yourRank::after {
+  position: absolute;
+  top: 50%;
+
+  height: 1px;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(244, 213, 128, 0.9)
+    );
+
+  content: "";
+}
+
+.playerRank::before,
+.playerRank::after {
+  width: 8px;
+}
+
+.yourRank::before,
+.yourRank::after {
+  width: 22px;
+}
+
+.playerRank::before,
+.yourRank::before {
+  right: 100%;
+  margin-right: 5px;
+}
+
+.playerRank::after,
+.yourRank::after {
+  left: 100%;
+  margin-left: 5px;
+  transform: rotate(180deg);
 }
 
 .playerHand {
@@ -634,8 +878,7 @@ button {
 
   background: transparent;
 
-  box-shadow:
-    0 5px 11px rgba(0, 0, 0, 0.5);
+  box-shadow: none;
 
   cursor: pointer;
 
@@ -644,7 +887,8 @@ button {
     filter 0.2s ease;
 }
 
-.playerHand[data-count="1"] .playingCard {
+.playerHand[data-count="1"]
+  .playingCard {
   left: 50%;
   transform: translateX(-50%);
 }
@@ -656,13 +900,18 @@ button {
   height: 100%;
 
   object-fit: fill;
+
+  filter:
+    drop-shadow(
+      0 5px 6px
+      rgba(0, 0, 0, 0.5)
+    );
+
   pointer-events: none;
   user-select: none;
 }
 
 .playerHand .playingCard:hover {
-  z-index: 100 !important;
-
   transform: translateY(-1.2cqw);
 
   filter:
@@ -681,49 +930,291 @@ button {
 }
 
 .actionButtons {
-  display: flex;
-  align-items: flex-end;
+  margin: 0;
 
-  gap: 10px;
-  padding-bottom: 4px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.8cqw;
 }
 
 .actionButtons button {
-  min-width: 120px;
-  padding: 13px 17px;
+  position: relative;
 
-  border-radius: 5px;
+  width: 10.667cqw;
+  min-width: 0;
+  min-height: 10.667cqw;
 
-  color: #f1e4c1;
-  font-weight: 700;
+  padding: 0;
+  overflow: hidden;
+
+  border-radius: 1.2cqw;
+
+  font-family: inherit;
   white-space: nowrap;
 
   cursor: pointer;
 
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.36),
+    0 0.7cqw 1.4cqw
+      rgba(0, 0, 0, 0.3);
+
   transition:
-    transform 120ms ease,
-    filter 120ms ease;
+    opacity 0.2s ease,
+    transform 0.2s ease,
+    filter 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
-.actionButtons button:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.12);
-}
+.actionButtons button::before {
+  position: absolute;
+  inset: 0;
 
-.playButton {
-  border: 1px solid #dfbb63;
+  pointer-events: none;
 
   background:
     linear-gradient(
-      #8b2b3b,
-      #541824
+      145deg,
+      rgba(255, 255, 255, 0.22),
+      transparent 42%,
+      rgba(0, 0, 0, 0.18)
     );
 
-  box-shadow:
-    0 0 16px rgba(188, 58, 78, 0.28);
+  content: "";
+}
+
+.actionButtons button:disabled::before {
+  opacity: 0.42;
+}
+
+.actionButtons.playerTurn
+  .passButton:not(:disabled) {
+  animation:
+    playerTurnButtonGlow
+    0.9s ease-in-out infinite;
+}
+
+@keyframes playerTurnButtonGlow {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px
+        rgba(255, 45, 60, 0.45),
+      0 0 8px
+        rgba(255, 45, 60, 0.45),
+      0 0.7cqw 1.4cqw
+        rgba(0, 0, 0, 0.3);
+  }
+
+  50% {
+    box-shadow:
+      0 0 0 3px
+        rgba(255, 45, 60, 0.9),
+      0 0 18px
+        rgba(255, 45, 60, 1),
+      0 0.7cqw 1.4cqw
+        rgba(0, 0, 0, 0.3);
+  }
+}
+
+.actionButtons button:hover:not(:disabled) {
+  transform:
+    translateY(-0.2cqw)
+    scale(1.02);
+
+  filter: brightness(1.08);
+}
+
+.actionButtons button:active:not(:disabled) {
+  transform:
+    translateY(0.05cqw)
+    scale(0.98);
+}
+
+.actionButtons button:disabled {
+  cursor: default;
+}
+
+.playCardButton {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  place-items: center;
+
+  border: 1px solid #ffe6a1;
+
+  color: #21180b;
+
+  background:
+    radial-gradient(
+      circle at 50% 42%,
+      #fff2af 0%,
+      #f0cb69 48%,
+      #bc8427 100%
+    );
+}
+
+.playButtonLabel {
+  position: relative;
+  z-index: 1;
+
+  margin-top: 0.8cqw;
+
+  font-size: 1.05cqw;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.turnCountdown {
+  position: relative;
+  z-index: 1;
+
+  align-self: center;
+
+  font-family:
+    "Cormorant Garamond",
+    serif;
+
+  font-size: 5.4cqw;
+  font-weight: 700;
+  line-height: 0.8;
+
+  font-variant-numeric: tabular-nums;
+
+  text-shadow:
+    0 0.12cqw 0
+      rgba(255, 255, 255, 0.55),
+    0 0.28cqw 0.5cqw
+      rgba(76, 45, 0, 0.24);
+}
+
+.turnCountdownUnit {
+  position: relative;
+  z-index: 1;
+
+  margin-bottom: 0.7cqw;
+
+  font-size: 0.9cqw;
+  font-weight: 800;
+  letter-spacing: 0.12em;
 }
 
 .passButton {
-  border: 1px solid #7a6c67;
-  background: rgba(29, 25, 26, 0.92);
+  display: block;
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.48);
+
+  color: #fff;
+
+  background:
+    radial-gradient(
+      circle at 50% 35%,
+      rgba(68, 87, 91, 0.96),
+      rgba(18, 28, 31, 0.98) 72%
+    );
+}
+
+.passButtonLabel {
+  position: absolute;
+  z-index: 1;
+  top: 0.8cqw;
+  left: 0.9cqw;
+
+  font-size: 1.25cqw;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.passRemainingLabel {
+  position: absolute;
+  z-index: 1;
+  top: 3.3cqw;
+  left: 1cqw;
+
+  color:
+    rgba(255, 255, 255, 0.64);
+
+  font-size: 0.8cqw;
+  font-weight: 700;
+}
+
+.passCount {
+  position: absolute;
+  z-index: 1;
+  right: 1.35cqw;
+  bottom: 1.05cqw;
+
+  width: 5cqw;
+  height: 5.5cqw;
+}
+
+.passCount strong {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  color: #f2d06b;
+
+  font-family:
+    "Cormorant Garamond",
+    serif;
+
+  font-size: 5.2cqw;
+  font-weight: 700;
+  line-height: 1;
+
+  font-variant-numeric: tabular-nums;
+
+  text-shadow:
+    0 0 0.6cqw
+      rgba(242, 208, 107, 0.4),
+    0 0.2cqw 0.3cqw
+      rgba(0, 0, 0, 0.5);
+}
+
+.passCount small {
+  position: absolute;
+  right: -0.2cqw;
+  bottom: -0.05cqw;
+
+  color:
+    rgba(255, 255, 255, 0.92);
+
+  font-size: 1.15cqw;
+  font-weight: 900;
+  line-height: 1;
+
+  transform: rotate(-12deg);
+}
+
+/* ==============================
+   選択中の手札
+   ============================== */
+
+.playerHand
+  .playingCard.selectedCard {
+  transform: translateY(-2.4cqw);
+
+  outline:
+    0.267cqw solid #f0cb69;
+  outline-offset: 0.2cqw;
+
+  filter:
+    brightness(1.08)
+    drop-shadow(
+      0 0 0.5cqw
+      rgba(240, 203, 105, 0.8)
+    );
+}
+
+/*
+  選択中にカーソルを合わせても
+  選択位置から下がらない
+*/
+.playerHand
+  .playingCard.selectedCard:hover {
+  transform: translateY(-2.4cqw);
 }
