@@ -21,6 +21,10 @@ import {
   isSpadeThree,
 } from "../utils/presidentRules";
 
+import {
+  playGameSound,
+} from "../utils/gameAudio";
+
 const PLAYER_COUNT = 4;
 const CPU_THINK_TIME = 700;
 const RULE_EFFECT_TIME = 900;
@@ -32,31 +36,15 @@ const PASS_SOUND_SOURCE =
   "/audio/pass.mp3";
 
 function playPassSound() {
-  const audio =
-    new Audio(
-      PASS_SOUND_SOURCE,
-    );
-
-  audio.play().catch(() => {
-    /*
-      再生できなくても
-      ゲームは止めない。
-    */
-  });
+  playGameSound(
+    PASS_SOUND_SOURCE,
+  );
 }
 
 function playCpuCardSound() {
-  const audio =
-    new Audio(
-      CARD_PLAY_SOUND_SOURCE,
-    );
-
-  audio.play().catch(() => {
-    /*
-      ブラウザに再生を
-      拒否された場合は何もしない。
-    */
-  });
+  playGameSound(
+    CARD_PLAY_SOUND_SOURCE,
+  );
 }
 
 function getActivePlayerIndexes(hands) {

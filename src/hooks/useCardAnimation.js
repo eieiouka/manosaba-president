@@ -1,8 +1,11 @@
 import {
   useCallback,
-  useRef,
   useState,
 } from "react";
+
+import {
+  playGameSound,
+} from "../utils/gameAudio";
 
 const ANIMATION_DURATION = 220;
 
@@ -24,26 +27,20 @@ export default function useCardAnimation() {
     setIsAnimating,
   ] = useState(false);
 
-  const audioRef = useRef(null);
+  /*
+    カードを出し始めた瞬間に
+    効果音を鳴らす。
 
+    gameAudio側で毎回別の
+    Audioを生成するため、
+    他の効果音が鳴っていても
+    同時再生できる。
+  */
   const playCardSound =
     useCallback(() => {
-      if (!audioRef.current) {
-        audioRef.current =
-          new Audio(
-            CARD_PLAY_SOUND,
-          );
-      }
-
-      const audio =
-        audioRef.current;
-
-      audio.currentTime = 0;
-
-      audio.play().catch(() => {
-        // 音声再生が拒否された場合は
-        // ゲームを止めない。
-      });
+      playGameSound(
+        CARD_PLAY_SOUND,
+      );
     }, []);
 
   const animateCards =
@@ -69,7 +66,14 @@ export default function useCardAnimation() {
           return;
         }
 
+        /*
+          アニメーション開始。
+
+          この瞬間に
+          カード音も鳴らす。
+        */
         setIsAnimating(true);
+
         playCardSound();
 
         const fieldRect =
@@ -84,12 +88,16 @@ export default function useCardAnimation() {
           FIELD_HEIGHT;
 
         const centerIndex =
-          (cards.length - 1) / 2;
+          (cards.length - 1) /
+          2;
 
         const flyingItems = [];
 
         cards.forEach(
-          (card, index) => {
+          (
+            card,
+            index,
+          ) => {
             const sourceElement =
               document.querySelector(
                 `.playerHand .playingCard[data-card-id="${card.id}"]`,
@@ -117,19 +125,25 @@ export default function useCardAnimation() {
               );
 
             const cardOffset =
-              (index -
-                centerIndex) *
+              (
+                index -
+                centerIndex
+              ) *
               FIELD_CARD_SPACING;
 
             const cardRotation =
-              (index -
-                centerIndex) *
+              (
+                index -
+                centerIndex
+              ) *
               2;
 
             const destinationX =
               fieldRect.left +
-              fieldRect.width / 2 +
-              cardOffset * scaleX;
+              fieldRect.width /
+                2 +
+              cardOffset *
+                scaleX;
 
             const destinationY =
               fieldRect.top +
@@ -142,11 +156,13 @@ export default function useCardAnimation() {
 
             const sourceCenterX =
               sourceRect.left +
-              sourceRect.width / 2;
+              sourceRect.width /
+                2;
 
             const sourceCenterY =
               sourceRect.top +
-              sourceRect.height / 2;
+              sourceRect.height /
+                2;
 
             const moveX =
               destinationX -
@@ -167,24 +183,29 @@ export default function useCardAnimation() {
             Object.assign(
               clone.style,
               {
-                position: "fixed",
+                position:
+                  "fixed",
 
                 top:
                   `${sourceRect.top}px`,
+
                 left:
                   `${sourceRect.left}px`,
 
                 width:
                   `${sourceRect.width}px`,
+
                 height:
                   `${sourceRect.height}px`,
 
                 margin: "0",
                 padding: "0",
 
-                zIndex: "99999",
+                zIndex:
+                  "99999",
 
-                objectFit: "fill",
+                objectFit:
+                  "fill",
 
                 borderRadius:
                   "8px",
@@ -208,8 +229,8 @@ export default function useCardAnimation() {
             );
 
             /*
-              元の手札は飛行中だけ
-              非表示にする。
+              元のカードは
+              飛行中だけ非表示。
             */
             sourceElement.style.visibility =
               "hidden";
@@ -233,7 +254,8 @@ export default function useCardAnimation() {
                   easing:
                     "cubic-bezier(0.2, 0.8, 0.2, 1)",
 
-                  fill: "forwards",
+                  fill:
+                    "forwards",
                 },
               );
 
@@ -245,17 +267,31 @@ export default function useCardAnimation() {
           },
         );
 
+        /*
+          飛ばせるDOMが
+          見つからなかった場合。
+        */
         if (
-          flyingItems.length === 0
+          flyingItems.length ===
+          0
         ) {
           onLanding?.();
-          setIsAnimating(false);
+
+          setIsAnimating(
+            false,
+          );
+
           return;
         }
 
+        /*
+          全カードの飛行完了を待つ。
+        */
         await Promise.all(
           flyingItems.map(
-            ({ animation }) =>
+            ({
+              animation,
+            }) =>
               animation.finished.catch(
                 () => {},
               ),
@@ -263,14 +299,16 @@ export default function useCardAnimation() {
         );
 
         /*
-          飛行が終わった瞬間に
-          本物の場札へ切り替える。
+          飛行終了。
+
+          ここでゲーム本体へ
+          カードを出したことを通知。
         */
         onLanding?.();
 
         /*
-          React側の場札描画を
-          1フレーム待つ。
+          React側で場札が
+          描画されるのを1フレーム待つ。
         */
         await new Promise(
           (resolve) => {
@@ -280,6 +318,10 @@ export default function useCardAnimation() {
           },
         );
 
+        /*
+          飛行用コピーを削除して
+          元カードのvisibilityを戻す。
+        */
         flyingItems.forEach(
           ({
             clone,
@@ -292,7 +334,9 @@ export default function useCardAnimation() {
           },
         );
 
-        setIsAnimating(false);
+        setIsAnimating(
+          false,
+        );
       },
       [
         isAnimating,
