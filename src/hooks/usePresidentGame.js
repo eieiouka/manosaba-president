@@ -28,6 +28,23 @@ const RULE_EFFECT_TIME = 900;
 const CARD_PLAY_SOUND_SOURCE =
   "/audio/card-play.mp3";
 
+const PASS_SOUND_SOURCE =
+  "/audio/pass.mp3";
+
+function playPassSound() {
+  const audio =
+    new Audio(
+      PASS_SOUND_SOURCE,
+    );
+
+  audio.play().catch(() => {
+    /*
+      再生できなくても
+      ゲームは止めない。
+    */
+  });
+}
+
 function playCpuCardSound() {
   const audio =
     new Audio(
@@ -153,6 +170,34 @@ export default function usePresidentGame() {
     consecutivePasses,
     setConsecutivePasses,
   ] = useState(0);
+
+  const [
+    passEffectPlayerIndex,
+    setPassEffectPlayerIndex,
+  ] = useState(null);
+
+  useEffect(() => {
+    if (
+      passEffectPlayerIndex === null
+    ) {
+      return undefined;
+    }
+
+    const timerId =
+      window.setTimeout(() => {
+        setPassEffectPlayerIndex(
+          null,
+        );
+      }, 600);
+
+    return () => {
+      window.clearTimeout(
+        timerId,
+      );
+    };
+  }, [
+    passEffectPlayerIndex,
+  ]);
 
   /*
     革命だけは場が流れても残る。
@@ -921,6 +966,16 @@ export default function usePresidentGame() {
     if (playedCards.length === 0) {
       return;
     }
+
+    /*
+      人間・CPU共通の
+      パス音とPASS表示。
+    */
+    playPassSound();
+
+    setPassEffectPlayerIndex(
+      playerIndex,
+    );
 
     const nextPassCount =
       consecutivePasses + 1;
