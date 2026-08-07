@@ -1139,6 +1139,8 @@ export default function usePresidentGame() {
     activeRuleEffect,
     isRuleEffectPlaying,
 
+    passEffectPlayerIndex,
+
     finishOrder,
     normalFinishOrder,
 

@@ -1243,3 +1243,97 @@ button {
     0 0 12px
     rgba(255, 45, 60, 0.9);
 }
+
+/* ==============================
+   PASSエフェクト
+   ============================== */
+
+.playerPortraitSlot {
+  position: relative;
+
+  grid-area: avatar;
+
+  width: 74px;
+  height: 74px;
+
+  align-self: center;
+  justify-self: center;
+}
+
+.yourPortraitSlot {
+  position: relative;
+
+  width: 66px;
+  height: 66px;
+  flex: 0 0 66px;
+}
+
+.passAvatarEffect {
+  position: absolute;
+  inset: -5px;
+
+  z-index: 50;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 3px solid #ff4357;
+  border-radius: 50%;
+
+  background:
+    rgba(20, 3, 8, 0.82);
+
+  color: #fff0d0;
+
+  font-family:
+    "Cinzel",
+    serif;
+
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+
+  text-shadow:
+    0 0 8px #ff3045,
+    0 0 16px #ff3045;
+
+  box-shadow:
+    0 0 12px
+      rgba(255, 48, 69, 0.9),
+    inset 0 0 12px
+      rgba(255, 48, 69, 0.35);
+
+  pointer-events: none;
+
+  animation:
+    passAvatarAnimation
+    600ms ease-out both;
+}
+
+@keyframes passAvatarAnimation {
+  0% {
+    opacity: 0;
+    transform: scale(1.35);
+  }
+
+  18% {
+    opacity: 1;
+    transform: scale(0.95);
+  }
+
+  30% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  75% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: scale(1.08);
+  }
+}

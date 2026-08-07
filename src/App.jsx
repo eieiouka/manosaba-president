@@ -72,6 +72,7 @@ function App() {
     playedCards,
 
     activeRuleEffect,
+    passEffectPlayerIndex,
 
     toggleCardSelection,
     playSelectedCards,
@@ -282,13 +283,17 @@ function App() {
             </div>
 
             {displayedOpponents.map(
-              (player) => (
+              (player, index) => (
                 <PlayerPanel
                   player={
                     player
                   }
                   debugMode={
                     debugMode
+                  }
+                  isPassing={
+                    passEffectPlayerIndex ===
+                    index + 1
                   }
                   key={
                     player.id
@@ -305,12 +310,20 @@ function App() {
 
             <section className="yourArea">
               <div className="yourInformation">
-                <img
-                  className="yourPortrait"
-                  src="/characters/nanoka.png"
-                  alt="黒部ナノカのアイコン"
-                  draggable="false"
-                />
+                <div className="yourPortraitSlot">
+                  <img
+                    className="yourPortrait"
+                    src="/characters/nanoka.png"
+                    alt="黒部ナノカのアイコン"
+                    draggable="false"
+                  />
+
+                  {passEffectPlayerIndex === 0 && (
+                    <div className="passAvatarEffect">
+                      PASS
+                    </div>
+                  )}
+                </div>
 
                 <div className="yourText">
                   <p className="yourName">

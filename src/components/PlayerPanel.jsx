@@ -3,17 +3,26 @@ import OpponentHand from "./OpponentHand";
 function PlayerPanel({
   player,
   debugMode,
+  isPassing,
 }) {
   return (
     <section
       className={`playerPanel ${player.position}`}
     >
-      <img
-        className="playerPortrait"
-        src={player.image}
-        alt={`${player.name}のアイコン`}
-        draggable="false"
-      />
+      <div className="playerPortraitSlot">
+        <img
+          className="playerPortrait"
+          src={player.image}
+          alt={`${player.name}のアイコン`}
+          draggable="false"
+        />
+
+        {isPassing && (
+          <div className="passAvatarEffect">
+            PASS
+          </div>
+        )}
+      </div>
 
       <div className="playerInformation">
         <div className="playerNameRow">
