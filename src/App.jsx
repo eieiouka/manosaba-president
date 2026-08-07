@@ -11,6 +11,7 @@ import TurnControls from "./components/TurnControls";
 import RuleEffectOverlay from "./components/RuleEffectOverlay";
 
 import RoundScoreNotebook from "./components/RoundScoreNotebook";
+import FinalMatchResult from "./components/FinalMatchResult";
 
 import useCardAnimation from "./hooks/useCardAnimation";
 import useGameScale from "./hooks/useGameScale";
@@ -86,6 +87,11 @@ function calculateGameScale() {
 function App() {
   const [debugMode, setDebugMode] =
     useState(false);
+
+  const [
+    showFinalResult,
+    setShowFinalResult,
+  ] = useState(false);
 
   const [
     roundNumber,
@@ -281,13 +287,9 @@ function App() {
   };
 
   const handleFinishMatch = () => {
-    /*
-      5回戦目の記録を保存。
-
-      最終結果画面は
-      この次に実装する。
-    */
     saveCurrentRound();
+
+    setShowFinalResult(true);
   };
 
   return (
@@ -525,25 +527,47 @@ function App() {
               />
             </section>
 
-            {isRoundFinished && (
-              <RoundScoreNotebook
-                roundNumber={
-                  roundNumber
-                }
-                savedRounds={
-                  savedRounds
-                }
-                finishOrder={
-                  finishOrder
-                }
-                onNextRound={
-                  handleNextRound
-                }
-                onFinishMatch={
-                  handleFinishMatch
-                }
-              />
-            )}
+            {isRoundFinished &&
+              !showFinalResult && (
+                <RoundScoreNotebook
+                  roundNumber={
+                    roundNumber
+                  }
+                  savedRounds={
+                    savedRounds
+                  }
+                  finishOrder={
+                    finishOrder
+                  }
+                  onNextRound={
+                    handleNextRound
+                  }
+                  onFinishMatch={
+                    handleFinishMatch
+                  }
+                />
+              )}
+
+              {showFinalResult && (
+                <FinalMatchResult
+                  savedRounds={
+                    savedRounds
+                  }
+                  roundNumber={
+                    roundNumber
+                  }
+                  finishOrder={
+                    finishOrder
+                  }
+                  onRestart={() => {
+                    window.location.reload();
+                  }}
+                  onBackToHub={() => {
+                    window.location.href =
+                      "https://manosaba-cardgame-hub.vercel.app/";
+                  }}
+                />
+              )}
           </section>
         </div>
       </div>
