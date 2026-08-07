@@ -30,7 +30,7 @@ function TurnControls({
         onClick={onPassTurn}
       >
         <span className="passButtonLabel">
-          パス
+          PASS
         </span>
       </button>
     </div>

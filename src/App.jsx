@@ -72,7 +72,7 @@ function App() {
     playedCards,
 
     activeRuleEffect,
-    passEffectPlayerIndex,
+    passEffectPlayerIndexes,
 
     toggleCardSelection,
     playSelectedCards,
@@ -292,8 +292,9 @@ function App() {
                     debugMode
                   }
                   isPassing={
-                    passEffectPlayerIndex ===
-                    index + 1
+                    passEffectPlayerIndexes.includes(
+                      index + 1,
+                    )
                   }
                   key={
                     player.id
@@ -318,7 +319,7 @@ function App() {
                     draggable="false"
                   />
 
-                  {passEffectPlayerIndex === 0 && (
+                  {passEffectPlayerIndexes.includes(0) && (
                     <div className="passAvatarEffect">
                       PASS
                     </div>

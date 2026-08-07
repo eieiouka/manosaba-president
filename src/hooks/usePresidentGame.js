@@ -172,31 +172,25 @@ export default function usePresidentGame() {
   ] = useState(0);
 
   const [
-    passEffectPlayerIndex,
-    setPassEffectPlayerIndex,
-  ] = useState(null);
+    passEffectPlayerIndexes,
+    setPassEffectPlayerIndexes,
+  ] = useState([]);
 
+  /*
+  自分のターンが戻ってきたら
+  そのプレイヤーのPASS表示を消す。
+  */
   useEffect(() => {
-    if (
-      passEffectPlayerIndex === null
-    ) {
-      return undefined;
-    }
-
-    const timerId =
-      window.setTimeout(() => {
-        setPassEffectPlayerIndex(
-          null,
-        );
-      }, 600);
-
-    return () => {
-      window.clearTimeout(
-        timerId,
-      );
-    };
+    setPassEffectPlayerIndexes(
+      (current) =>
+        current.filter(
+          (playerIndex) =>
+            playerIndex !==
+            currentPlayerIndex,
+        ),
+    );
   }, [
-    passEffectPlayerIndex,
+    currentPlayerIndex,
   ]);
 
   /*
@@ -973,8 +967,14 @@ export default function usePresidentGame() {
     */
     playPassSound();
 
-    setPassEffectPlayerIndex(
-      playerIndex,
+    setPassEffectPlayerIndexes(
+      (current) =>
+        current.includes(playerIndex)
+          ? current
+          : [
+              ...current,
+              playerIndex,
+            ],
     );
 
     const nextPassCount =
@@ -1139,7 +1139,7 @@ export default function usePresidentGame() {
     activeRuleEffect,
     isRuleEffectPlaying,
 
-    passEffectPlayerIndex,
+    passEffectPlayerIndexes,
 
     finishOrder,
     normalFinishOrder,
