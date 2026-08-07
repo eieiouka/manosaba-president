@@ -80,3 +80,22 @@ export function getCardLabel(card) {
     card.rank,
   )}`;
 }
+
+export function getCardStrength(card) {
+  if (
+    card.isJoker ||
+    card.suit === "joker"
+  ) {
+    return 16;
+  }
+
+  if (card.rank === 1) {
+    return 14;
+  }
+
+  if (card.rank === 2) {
+    return 15;
+  }
+
+  return card.rank;
+}

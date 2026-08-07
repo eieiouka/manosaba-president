@@ -1,6 +1,9 @@
 import OpponentHand from "./OpponentHand";
 
-function PlayerPanel({ player }) {
+function PlayerPanel({
+  player,
+  debugMode,
+}) {
   return (
     <section
       className={`playerPanel ${player.position}`}
@@ -24,18 +27,23 @@ function PlayerPanel({ player }) {
         </div>
 
         <div className="cardCountDisplay">
-          <span>残り</span>
+          <span>
+            残り
+          </span>
 
           <strong>
             {player.cardCount}
           </strong>
 
-          <span>枚</span>
+          <span>
+            枚
+          </span>
         </div>
       </div>
 
       <OpponentHand
-        count={player.cardCount}
+        cards={player.hand}
+        debugMode={debugMode}
       />
     </section>
   );

@@ -7,27 +7,56 @@ function PlayingCard({
   card,
   index,
   selected,
+  playable,
   onToggle,
 }) {
   const cardLabel =
     getCardLabel(card);
 
+  const handleClick = () => {
+    /*
+      選択済みカードは
+      いつでも解除可能。
+    */
+    if (selected) {
+      onToggle(card);
+      return;
+    }
+
+    /*
+      赤くないカードは
+      選択できない。
+    */
+    if (!playable) {
+      return;
+    }
+
+    onToggle(card);
+  };
+
   return (
     <button
       className={`playingCard ${
+        playable
+          ? "playableCard"
+          : ""
+      } ${
         selected
           ? "selectedCard"
           : ""
       }`}
+      data-card-id={card.id}
       style={{
         "--hand-index": index,
         zIndex: index + 1,
       }}
       type="button"
       aria-label={cardLabel}
-      onClick={() => {
-        onToggle(card);
-      }}
+      aria-disabled={
+        !selected &&
+        !playable
+      }
+      onClick={handleClick}
     >
       <img
         src={getCardImagePath(

@@ -1218,3 +1218,28 @@ button {
   .playingCard.selectedCard:hover {
   transform: translateY(-2.4cqw);
 }
+
+/* ==============================
+   出せるカード
+   七並べと同じ赤枠
+   ============================== */
+
+.playerHand .playableCard {
+  position: absolute;
+}
+
+.playerHand .playableCard::after {
+  content: "";
+  position: absolute;
+
+  inset: 4px;
+
+  border: 4px solid #ff3045;
+  border-radius: inherit;
+
+  pointer-events: none;
+
+  box-shadow:
+    0 0 12px
+    rgba(255, 45, 60, 0.9);
+}
