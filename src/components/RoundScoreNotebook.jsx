@@ -412,17 +412,17 @@ function RoundScoreNotebook({
                           className={`roundNotebookScoreCell ${
                             targetRound ===
                             roundNumber
-                              ? "currentRoundScoreCell"
-                              : ""
-                          } ${
-                            score > 0
-                              ? "positiveScore"
-                              : ""
-                          } ${
-                            score < 0
-                              ? "negativeScore"
-                              : ""
-                          }`}
+                                ? "currentRoundScoreCell"
+                                : ""
+                            } ${
+                            score === null
+                                ? ""
+                                : score > 0
+                                ? "positiveScore"
+                                : score < 0
+                                    ? "negativeScore"
+                                    : "zeroScore"
+                            }`}
                           key={
                             targetRound
                           }
@@ -438,15 +438,23 @@ function RoundScoreNotebook({
                     },
                   )}
 
-                  <div className="roundNotebookTotalCell">
+                  <div
+                    className={`roundNotebookTotalCell ${
+                        getTotalScore(playerIndex) > 0
+                        ? "positiveScore"
+                        : getTotalScore(playerIndex) < 0
+                            ? "negativeScore"
+                            : "zeroScore"
+                    }`}
+                    >
                     {showResult
-                      ? formatScore(
-                          getTotalScore(
+                        ? formatScore(
+                            getTotalScore(
                             playerIndex,
-                          ),
+                            ),
                         )
-                      : ""}
-                  </div>
+                        : ""}
+                    </div>
                 </div>
               );
             },
@@ -454,45 +462,59 @@ function RoundScoreNotebook({
         </div>
 
         <div className="presidentRoundRanks">
-          {currentResults.map(
-            (
-              result,
-              playerIndex,
-            ) => (
-              <div
-                className="presidentRoundRank"
-                key={
-                  players[
-                    playerIndex
-                  ].id
-                }
-              >
-                <span>
-                  {result.place +
-                    1}
-                  位
-                </span>
+          {[...currentResults]
+            .sort(
+              (a, b) =>
+                a.place -
+                b.place,
+            )
+            .map((result) => {
+              const player =
+                players[
+                  result.playerIndex
+                ];
 
-                <strong>
-                  {
-                    players[
-                      playerIndex
-                    ].name
-                  }
-                </strong>
+              return (
+                <div
+                  className="presidentRoundRank"
+                  key={player.id}
+                >
+                  <span className="presidentRankPlace">
+                    {result.place + 1}
+                    位
+                  </span>
 
-                <em>
-                  {result.rank}
-                </em>
+                  <img
+                    className="presidentRankPortrait"
+                    src={player.image}
+                    alt=""
+                    draggable="false"
+                  />
 
-                <b>
-                  {formatScore(
-                    result.score,
-                  )}
-                </b>
-              </div>
-            ),
-          )}
+                  <strong>
+                    {player.name}
+                  </strong>
+
+                  <em>
+                    {result.rank}
+                  </em>
+
+                  <b
+                    className={
+                      result.score > 0
+                        ? "positiveScore"
+                        : result.score < 0
+                          ? "negativeScore"
+                          : ""
+                    }
+                  >
+                    {formatScore(
+                      result.score,
+                    )}
+                  </b>
+                </div>
+              );
+            })}
         </div>
 
         <footer className="roundNotebookFooter">

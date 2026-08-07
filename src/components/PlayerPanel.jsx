@@ -34,20 +34,6 @@ function PlayerPanel({
             {player.rank}
           </span>
         </div>
-
-        <div className="cardCountDisplay">
-          <span>
-            残り
-          </span>
-
-          <strong>
-            {player.cardCount}
-          </strong>
-
-          <span>
-            枚
-          </span>
-        </div>
       </div>
 
       <OpponentHand

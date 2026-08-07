@@ -1101,7 +1101,7 @@ export default function usePresidentGame() {
     return () => {
       window.clearTimeout(timerId);
     };
-  }, [
+    }, [
     currentPlayerIndex,
     hands,
     fieldPlay,
@@ -1112,6 +1112,68 @@ export default function usePresidentGame() {
     isRoundFinished,
     isRuleEffectPlaying,
   ]);
+
+  /*
+    ==============================
+    次のラウンドを開始
+    ==============================
+  */
+  function startNextRound() {
+    /*
+      新しくカードを配る。
+    */
+    setHands(
+      createGameHands(),
+    );
+
+    /*
+      ターンを初期化。
+    */
+    setCurrentPlayerIndex(0);
+
+    /*
+      カード選択を解除。
+    */
+    setSelectedCardIds([]);
+
+    /*
+      場を空にする。
+    */
+    setPlayedCards([]);
+    setLastPlayPlayerIndex(null);
+    setConsecutivePasses(0);
+
+    /*
+      PASS表示を全部消す。
+    */
+    setPassEffectPlayerIndexes([]);
+
+    /*
+      革命を解除。
+    */
+    setRevolution(false);
+
+    /*
+      11バック・縛り・激シバを解除。
+    */
+    setElevenBack(false);
+    setLockedSuit(null);
+    setGekiShibari(false);
+    setSingleStrengthHistory([]);
+
+    /*
+      ルールエフェクトをリセット。
+    */
+    setLastRuleEvents([]);
+    setRuleEffectQueue([]);
+    setPendingSpecialClear(null);
+
+    /*
+      順位記録をリセット。
+    */
+    setNormalFinishOrder([]);
+    setForbiddenFinishPlayerIndex(null);
+  }
 
   return {
     hands,
@@ -1150,5 +1212,7 @@ export default function usePresidentGame() {
     toggleCardSelection,
     playSelectedCards,
     passTurn,
+
+    startNextRound,
   };
 }

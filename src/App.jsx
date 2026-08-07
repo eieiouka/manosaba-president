@@ -10,6 +10,8 @@ import PlayingCard from "./components/PlayingCard";
 import TurnControls from "./components/TurnControls";
 import RuleEffectOverlay from "./components/RuleEffectOverlay";
 
+import RoundScoreNotebook from "./components/RoundScoreNotebook";
+
 import useCardAnimation from "./hooks/useCardAnimation";
 import useGameScale from "./hooks/useGameScale";
 import usePresidentGame from "./hooks/usePresidentGame";
@@ -20,6 +22,38 @@ import {
   PAGE_PADDING,
   opponents,
 } from "./constants/presidentConstants";
+
+const TOTAL_ROUNDS = 5;
+
+const RANKS_BY_PLACE = [
+  "大富豪",
+  "富豪",
+  "貧民",
+  "大貧民",
+];
+
+function createRanksFromFinishOrder(
+  finishOrder,
+) {
+  const nextRanks = [
+    "平民",
+    "平民",
+    "平民",
+    "平民",
+  ];
+
+  finishOrder.forEach(
+    (
+      playerIndex,
+      place,
+    ) => {
+      nextRanks[playerIndex] =
+        RANKS_BY_PLACE[place];
+    },
+  );
+
+  return nextRanks;
+}
 
 function calculateGameScale() {
   const viewportWidth =
@@ -53,6 +87,26 @@ function App() {
   const [debugMode, setDebugMode] =
     useState(false);
 
+  const [
+    roundNumber,
+    setRoundNumber,
+  ] = useState(1);
+
+  const [
+    savedRounds,
+    setSavedRounds,
+  ] = useState([]);
+
+  const [
+    playerRanks,
+    setPlayerRanks,
+  ] = useState([
+    "平民",
+    "平民",
+    "平民",
+    "平民",
+  ]);
+
   const gameScale =
     useGameScale(
       calculateGameScale,
@@ -74,9 +128,13 @@ function App() {
     activeRuleEffect,
     passEffectPlayerIndexes,
 
+    finishOrder,
+    isRoundFinished,
+
     toggleCardSelection,
     playSelectedCards,
     passTurn,
+    startNextRound,
   } = usePresidentGame();
 
   const {
@@ -101,8 +159,13 @@ function App() {
         const cpuHand =
           hands[index + 1];
 
-        return {
+                return {
           ...player,
+
+          rank:
+            playerRanks[
+              index + 1
+            ],
 
           cardCount:
             cpuHand.length,
@@ -155,6 +218,76 @@ function App() {
     toggleCardSelection(
       card,
     );
+  };
+
+    const saveCurrentRound = () => {
+    setSavedRounds(
+      (current) => {
+        const alreadySaved =
+          current.some(
+            (round) =>
+              round.roundNumber ===
+              roundNumber,
+          );
+
+        if (alreadySaved) {
+          return current;
+        }
+
+        return [
+          ...current,
+          {
+            roundNumber,
+            finishOrder: [
+              ...finishOrder,
+            ],
+          },
+        ];
+      },
+    );
+  };
+
+  const handleNextRound = () => {
+    /*
+      今回の結果を保存
+    */
+    saveCurrentRound();
+
+    /*
+      今回の順位を
+      次回の階級にする
+    */
+    setPlayerRanks(
+      createRanksFromFinishOrder(
+        finishOrder,
+      ),
+    );
+
+    /*
+      新しいカードを配る
+    */
+    startNextRound();
+
+    /*
+      ROUNDを進める
+    */
+    setRoundNumber(
+      (current) =>
+        Math.min(
+          current + 1,
+          TOTAL_ROUNDS,
+        ),
+    );
+  };
+
+  const handleFinishMatch = () => {
+    /*
+      5回戦目の記録を保存。
+
+      最終結果画面は
+      この次に実装する。
+    */
+    saveCurrentRound();
   };
 
   return (
@@ -278,7 +411,7 @@ function App() {
               </span>
 
               <strong>
-                1 / 5
+                {roundNumber} / {TOTAL_ROUNDS}
               </strong>
             </div>
 
@@ -332,7 +465,7 @@ function App() {
                   </p>
 
                   <p className="yourRank">
-                    平民
+                    {playerRanks[0]}
                   </p>
                 </div>
               </div>
@@ -378,7 +511,7 @@ function App() {
                 </div>
               </div>
 
-              <TurnControls
+                            <TurnControls
                 canPlay={
                   canPlaySelectedCards &&
                   !isAnimating
@@ -391,6 +524,26 @@ function App() {
                 }
               />
             </section>
+
+            {isRoundFinished && (
+              <RoundScoreNotebook
+                roundNumber={
+                  roundNumber
+                }
+                savedRounds={
+                  savedRounds
+                }
+                finishOrder={
+                  finishOrder
+                }
+                onNextRound={
+                  handleNextRound
+                }
+                onFinishMatch={
+                  handleFinishMatch
+                }
+              />
+            )}
           </section>
         </div>
       </div>
