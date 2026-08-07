@@ -8,6 +8,7 @@ import FieldArea from "./components/FieldArea";
 import PlayerPanel from "./components/PlayerPanel";
 import PlayingCard from "./components/PlayingCard";
 import TurnControls from "./components/TurnControls";
+import RuleEffectOverlay from "./components/RuleEffectOverlay";
 
 import useCardAnimation from "./hooks/useCardAnimation";
 import useGameScale from "./hooks/useGameScale";
@@ -69,6 +70,8 @@ function App() {
     canPlaySelectedCards,
 
     playedCards,
+
+    activeRuleEffect,
 
     toggleCardSelection,
     playSelectedCards,
@@ -208,12 +211,9 @@ function App() {
           </header>
 
           <section className="gameTable">
-            {/*
-              DEBUGボタン。
-
-              ゲーム処理には影響せず、
-              CPU手札の表示だけ変更する。
-            */}
+            <RuleEffectOverlay
+              effect={activeRuleEffect}
+            />
             <button
               type="button"
               onClick={() => {

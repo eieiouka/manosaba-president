@@ -23,6 +23,7 @@ import {
 
 const PLAYER_COUNT = 4;
 const CPU_THINK_TIME = 700;
+const RULE_EFFECT_TIME = 900;
 
 function getActivePlayerIndexes(hands) {
   return hands
@@ -182,6 +183,17 @@ export default function usePresidentGame() {
     lastRuleEvents,
     setLastRuleEvents,
   ] = useState([]);
+
+  const [
+    ruleEffectQueue,
+    setRuleEffectQueue,
+  ] = useState([]);
+
+  const activeRuleEffect =
+    ruleEffectQueue[0] ?? null;
+
+  const isRuleEffectPlaying =
+    ruleEffectQueue.length > 0;
 
   /*
     正常に上がった順番。
@@ -349,7 +361,8 @@ export default function usePresidentGame() {
     useMemo(() => {
       if (
         currentPlayerIndex !== 0 ||
-        isRoundFinished
+        isRoundFinished ||
+        isRuleEffectPlaying
       ) {
         return [];
       }
@@ -363,11 +376,13 @@ export default function usePresidentGame() {
       selectedCardIds,
       currentPlayerIndex,
       isRoundFinished,
+      isRuleEffectPlaying,
     ]);
 
   const canPlaySelectedCards =
     currentPlayerIndex === 0 &&
     !isRoundFinished &&
+    !isRuleEffectPlaying &&
     selectedPlay.valid &&
     canBeatPlay(
       selectedPlay,
@@ -385,6 +400,29 @@ export default function usePresidentGame() {
     setGekiShibari(false);
     setSingleStrengthHistory([]);
   }
+
+  function triggerRuleEvents(events) {
+    setLastRuleEvents(events);
+    setRuleEffectQueue(events);
+  }
+
+  useEffect(() => {
+    if (!activeRuleEffect) {
+      return undefined;
+    }
+
+    const timerId =
+      window.setTimeout(() => {
+        setRuleEffectQueue(
+          (current) =>
+            current.slice(1),
+        );
+      }, RULE_EFFECT_TIME);
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [activeRuleEffect]);
 
   function moveToNextActive(
     nextHands,
@@ -488,7 +526,7 @@ export default function usePresidentGame() {
       スペ3返しは完全単独表示。
     */
     if (spadeThreeReturn) {
-      setLastRuleEvents([
+      triggerRuleEvents([
         "spadeThree",
         ...(forbiddenFinish
           ? ["forbiddenFinish"]
@@ -532,7 +570,7 @@ export default function usePresidentGame() {
         );
       }
 
-      setLastRuleEvents(events);
+      triggerRuleEvents(events);
 
       clearFieldAfterSpecial(
         nextHands,
@@ -637,7 +675,7 @@ export default function usePresidentGame() {
       events.push("forbiddenFinish");
     }
 
-    setLastRuleEvents(events);
+    triggerRuleEvents(events);
 
     /*
       通常の場更新。
@@ -703,7 +741,8 @@ export default function usePresidentGame() {
   function toggleCardSelection(card) {
     if (
       currentPlayerIndex !== 0 ||
-      isRoundFinished
+      isRoundFinished ||
+      isRuleEffectPlaying
     ) {
       return;
     }
@@ -778,6 +817,7 @@ export default function usePresidentGame() {
     setLastPlayPlayerIndex(null);
     setConsecutivePasses(0);
     setLastRuleEvents([]);
+    setRuleEffectQueue([]);
     resetTemporaryFieldRules();
 
     if (leader !== null) {
@@ -828,7 +868,8 @@ export default function usePresidentGame() {
   function passTurn() {
     if (
       currentPlayerIndex !== 0 ||
-      isRoundFinished
+      isRoundFinished ||
+      isRuleEffectPlaying
     ) {
       return;
     }
@@ -840,7 +881,8 @@ export default function usePresidentGame() {
   useEffect(() => {
     if (
       currentPlayerIndex === 0 ||
-      isRoundFinished
+      isRoundFinished ||
+      isRuleEffectPlaying
     ) {
       return undefined;
     }
@@ -918,6 +960,7 @@ export default function usePresidentGame() {
     consecutivePasses,
     lastPlayPlayerIndex,
     isRoundFinished,
+    isRuleEffectPlaying,
   ]);
 
   return {
@@ -943,9 +986,12 @@ export default function usePresidentGame() {
     singleStrengthHistory,
 
     lastRuleEvents,
+    activeRuleEffect,
+    isRuleEffectPlaying,
 
     finishOrder,
     normalFinishOrder,
+    
     forbiddenFinishPlayerIndex,
     isRoundFinished,
 
