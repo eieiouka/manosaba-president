@@ -25,6 +25,23 @@ const PLAYER_COUNT = 4;
 const CPU_THINK_TIME = 700;
 const RULE_EFFECT_TIME = 900;
 
+const CARD_PLAY_SOUND_SOURCE =
+  "/audio/card-play.mp3";
+
+function playCpuCardSound() {
+  const audio =
+    new Audio(
+      CARD_PLAY_SOUND_SOURCE,
+    );
+
+  audio.play().catch(() => {
+    /*
+      ブラウザに再生を
+      拒否された場合は何もしない。
+    */
+  });
+}
+
 function getActivePlayerIndexes(hands) {
   return hands
     .map((hand, index) => ({
@@ -194,6 +211,11 @@ export default function usePresidentGame() {
 
   const isRuleEffectPlaying =
     ruleEffectQueue.length > 0;
+
+  const [
+    pendingSpecialClear,
+    setPendingSpecialClear,
+  ] = useState(null);
 
   /*
     正常に上がった順番。
@@ -424,6 +446,78 @@ export default function usePresidentGame() {
     };
   }, [activeRuleEffect]);
 
+  useEffect(() => {
+    /*
+      まだ特殊ルール演出中なら
+      カードを消さない。
+    */
+    if (isRuleEffectPlaying) {
+      return;
+    }
+
+    /*
+      8切り・スペ3返しの
+      場流し予約がなければ何もしない。
+    */
+    if (!pendingSpecialClear) {
+      return;
+    }
+
+    const {
+      playerIndex,
+    } = pendingSpecialClear;
+
+    /*
+      ここで初めて場札を消す。
+    */
+    setPlayedCards([]);
+
+    setLastPlayPlayerIndex(null);
+    setConsecutivePasses(0);
+
+    resetTemporaryFieldRules();
+
+    /*
+      場を流したので予約解除。
+    */
+    setPendingSpecialClear(null);
+
+    /*
+      8切り・スペ3返しをした人が
+      まだ手札を持っていれば
+      その人から再開。
+    */
+    if (
+      hands[playerIndex].length > 0
+    ) {
+      setCurrentPlayerIndex(
+        playerIndex,
+      );
+
+      return;
+    }
+
+    /*
+      そのカードで上がった場合は
+      次の生存プレイヤーから。
+    */
+    const nextPlayer =
+      getNextActivePlayerIndex(
+        hands,
+        playerIndex,
+      );
+
+    if (nextPlayer !== null) {
+      setCurrentPlayerIndex(
+        nextPlayer,
+      );
+    }
+  }, [
+    isRuleEffectPlaying,
+    pendingSpecialClear,
+    hands,
+  ]);
+
   function moveToNextActive(
     nextHands,
     playerIndex,
@@ -442,33 +536,31 @@ export default function usePresidentGame() {
   }
 
   function clearFieldAfterSpecial(
-    nextHands,
+    cards,
     playerIndex,
   ) {
-    setPlayedCards([]);
-    setLastPlayPlayerIndex(null);
-    setConsecutivePasses(0);
-    resetTemporaryFieldRules();
-
     /*
-      8切り・スペ3返しは
-      出した本人から再開。
-      上がっていれば次の生存者。
-    */
-    if (
-      nextHands[playerIndex]
-        .length > 0
-    ) {
-      setCurrentPlayerIndex(
-        playerIndex,
-      );
-      return;
-    }
+      まだカードは消さない。
 
-    moveToNextActive(
-      nextHands,
+      演出中は、特殊ルールを
+      発生させたカードを
+      場に表示したままにする。
+    */
+    setPlayedCards(cards);
+
+    setLastPlayPlayerIndex(
       playerIndex,
     );
+
+    setConsecutivePasses(0);
+
+    /*
+      演出終了後に
+      場を流すための予約。
+    */
+    setPendingSpecialClear({
+      playerIndex,
+    });
   }
 
   function registerFinish({
@@ -534,7 +626,7 @@ export default function usePresidentGame() {
       ]);
 
       clearFieldAfterSpecial(
-        nextHands,
+        cards,
         playerIndex,
       );
 
@@ -573,7 +665,7 @@ export default function usePresidentGame() {
       triggerRuleEvents(events);
 
       clearFieldAfterSpecial(
-        nextHands,
+        cards,
         playerIndex,
       );
 
@@ -937,11 +1029,14 @@ export default function usePresidentGame() {
         const chosenPlay =
           legalCpuPlays[0];
 
-        if (chosenPlay) {
+       if (chosenPlay) {
+          playCpuCardSound();
+
           commitPlay({
             playerIndex: cpuIndex,
             play: chosenPlay,
           });
+
           return;
         }
 
@@ -991,7 +1086,7 @@ export default function usePresidentGame() {
 
     finishOrder,
     normalFinishOrder,
-    
+
     forbiddenFinishPlayerIndex,
     isRoundFinished,
 
