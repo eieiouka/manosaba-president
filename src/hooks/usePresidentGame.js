@@ -13,42 +13,30 @@ import {
   canBeatPlay,
   getAllValidPlays,
   getPlayableCardIds,
+  getPlayEffects,
+  getSingleNaturalStrength,
+  getSingleNaturalSuit,
+  isJoker,
+  isSingleJoker,
+  isSpadeThree,
 } from "../utils/presidentRules";
 
 const PLAYER_COUNT = 4;
-
 const CPU_THINK_TIME = 700;
 
-/*
-  手札が残っているプレイヤー。
-*/
-function getActivePlayerIndexes(
-  hands,
-) {
+function getActivePlayerIndexes(hands) {
   return hands
-    .map(
-      (hand, index) => ({
-        index,
-        cardCount:
-          hand.length,
-      }),
-    )
+    .map((hand, index) => ({
+      index,
+      cardCount: hand.length,
+    }))
     .filter(
       (player) =>
         player.cardCount > 0,
     )
-    .map(
-      (player) =>
-        player.index,
-    );
+    .map((player) => player.index);
 }
 
-/*
-  現在のプレイヤーの
-  次に残っている人を探す。
-
-  上がった人は自動的に飛ばす。
-*/
 function getNextActivePlayerIndex(
   hands,
   currentPlayerIndex,
@@ -59,16 +47,10 @@ function getNextActivePlayerIndex(
     offset += 1
   ) {
     const nextIndex =
-      (
-        currentPlayerIndex +
-        offset
-      ) %
+      (currentPlayerIndex + offset) %
       PLAYER_COUNT;
 
-    if (
-      hands[nextIndex]
-        .length > 0
-    ) {
+    if (hands[nextIndex].length > 0) {
       return nextIndex;
     }
   }
@@ -76,41 +58,20 @@ function getNextActivePlayerIndex(
   return null;
 }
 
-/*
-  場を流すために必要な
-  パス人数を計算。
-
-  最後にカードを出した人が
-  まだゲーム中なら、
-  その人以外が全員パスすれば流れる。
-
-  最後にカードを出した人が
-  そのカードで上がった場合は、
-  残っている全員がパスすれば流れる。
-*/
 function getRequiredPassCount(
   hands,
   lastPlayPlayerIndex,
 ) {
   const activePlayers =
-    getActivePlayerIndexes(
-      hands,
-    );
+    getActivePlayerIndexes(hands);
 
-  if (
-    lastPlayPlayerIndex ===
-    null
-  ) {
+  if (lastPlayPlayerIndex === null) {
     return 0;
   }
 
-  const lastPlayerIsActive =
-    hands[
-      lastPlayPlayerIndex
-    ].length > 0;
-
   if (
-    lastPlayerIsActive
+    hands[lastPlayPlayerIndex]
+      .length > 0
   ) {
     return Math.max(
       activePlayers.length - 1,
@@ -121,31 +82,17 @@ function getRequiredPassCount(
   return activePlayers.length;
 }
 
-/*
-  場が流れた後、
-  誰から始めるか。
-
-  最後に出した人がまだ残っていれば
-  その人。
-
-  そのカードで上がっていた場合は
-  次の生存プレイヤー。
-*/
 function getLeaderAfterClear(
   hands,
   lastPlayPlayerIndex,
 ) {
-  if (
-    lastPlayPlayerIndex ===
-    null
-  ) {
+  if (lastPlayPlayerIndex === null) {
     return null;
   }
 
   if (
-    hands[
-      lastPlayPlayerIndex
-    ].length > 0
+    hands[lastPlayPlayerIndex]
+      .length > 0
   ) {
     return lastPlayPlayerIndex;
   }
@@ -156,20 +103,14 @@ function getLeaderAfterClear(
   );
 }
 
-export default function usePresidentGame() {
-  const [
-    hands,
-    setHands,
-  ] = useState(
-    createGameHands,
-  );
+function containsJoker(cards) {
+  return cards.some(isJoker);
+}
 
-  /*
-    0 = 黒部ナノカ
-    1 = 桜羽エマ
-    2 = 橘シェリー
-    3 = 遠野ハンナ
-  */
+export default function usePresidentGame() {
+  const [hands, setHands] =
+    useState(createGameHands);
+
   const [
     currentPlayerIndex,
     setCurrentPlayerIndex,
@@ -196,189 +137,192 @@ export default function usePresidentGame() {
   ] = useState(0);
 
   /*
-    上がった順番。
-
-    例：
-    [2, 0, 3, 1]
-
-    なら
-
-    1位 シェリー
-    2位 ナノカ
-    3位 ハンナ
-    4位 エマ
+    革命だけは場が流れても残る。
   */
   const [
-    finishOrder,
-    setFinishOrder,
-  ] = useState([]);
-
-  const hand =
-    hands[0];
+    revolution,
+    setRevolution,
+  ] = useState(false);
 
   /*
-    現在ゲームに残っている人。
+    以下は場が流れたら解除。
   */
+  const [
+    elevenBack,
+    setElevenBack,
+  ] = useState(false);
+
+  const [
+    lockedSuit,
+    setLockedSuit,
+  ] = useState(null);
+
+  const [
+    gekiShibari,
+    setGekiShibari,
+  ] = useState(false);
+
+  const [
+    singleStrengthHistory,
+    setSingleStrengthHistory,
+  ] = useState([]);
+
+  /*
+    将来のエフェクト表示用。
+
+    revolution
+    shibari
+    gekiShibari
+    elevenBack
+    eightCut
+    spadeThree
+    forbiddenFinish
+  */
+  const [
+    lastRuleEvents,
+    setLastRuleEvents,
+  ] = useState([]);
+
+  /*
+    正常に上がった順番。
+  */
+  const [
+    normalFinishOrder,
+    setNormalFinishOrder,
+  ] = useState([]);
+
+  /*
+    Joker禁止上がりをした人。
+    Jokerは1枚なので最大1人。
+  */
+  const [
+    forbiddenFinishPlayerIndex,
+    setForbiddenFinishPlayerIndex,
+  ] = useState(null);
+
+  const hand = hands[0];
+
   const activePlayerIndexes =
     useMemo(
       () =>
-        getActivePlayerIndexes(
-          hands,
-        ),
-      [
-        hands,
-      ],
+        getActivePlayerIndexes(hands),
+      [hands],
     );
 
   /*
-    残り1人になった時点で
-    順位はすべて確定。
+    最終順位。
+
+    禁止上がりした人は
+    必ず最後へ送る。
   */
+  const finishOrder =
+    useMemo(() => {
+      const order = [
+        ...normalFinishOrder,
+      ];
+
+      const eliminatedCount =
+        normalFinishOrder.length +
+        (forbiddenFinishPlayerIndex !==
+        null
+          ? 1
+          : 0);
+
+      if (
+        activePlayerIndexes.length ===
+          1 &&
+        eliminatedCount >= 3
+      ) {
+        const lastPlayer =
+          activePlayerIndexes[0];
+
+        if (!order.includes(lastPlayer)) {
+          order.push(lastPlayer);
+        }
+      }
+
+      if (
+        forbiddenFinishPlayerIndex !==
+        null
+      ) {
+        const withoutPenalty =
+          order.filter(
+            (playerIndex) =>
+              playerIndex !==
+              forbiddenFinishPlayerIndex,
+          );
+
+        /*
+          ゲーム終了前でも
+          反則者は4位確定だが、
+          finishOrderは順位順を
+          保つため最後に置く。
+        */
+        if (
+          eliminatedCount >= 3 &&
+          activePlayerIndexes.length <= 1
+        ) {
+          withoutPenalty.push(
+            forbiddenFinishPlayerIndex,
+          );
+        }
+
+        return withoutPenalty;
+      }
+
+      return order;
+    }, [
+      normalFinishOrder,
+      forbiddenFinishPlayerIndex,
+      activePlayerIndexes,
+    ]);
+
   const isRoundFinished =
-    activePlayerIndexes.length <=
-    1;
+    finishOrder.length ===
+    PLAYER_COUNT;
 
-  /*
-    誰かの手札が0枚になったら
-    上がり順へ追加する。
-
-    3人上がって残り1人になったら、
-    その最後の1人も自動的に
-    4位として追加する。
-  */
-  useEffect(
-    () => {
-      setFinishOrder(
-        (current) => {
-          const next = [
-            ...current,
-          ];
-
-          /*
-            新しく0枚になった人。
-          */
-          for (
-            let playerIndex = 0;
-            playerIndex <
-            PLAYER_COUNT;
-            playerIndex += 1
-          ) {
-            if (
-              hands[
-                playerIndex
-              ].length !== 0
-            ) {
-              continue;
-            }
-
-            if (
-              next.includes(
-                playerIndex,
-              )
-            ) {
-              continue;
-            }
-
-            next.push(
-              playerIndex,
-            );
-          }
-
-          /*
-            3人が上がったら、
-            残った1人を4位にする。
-          */
-          const activePlayers =
-            getActivePlayerIndexes(
-              hands,
-            );
-
-          if (
-            activePlayers.length ===
-              1 &&
-            next.length === 3
-          ) {
-            const lastPlayer =
-              activePlayers[0];
-
-            if (
-              !next.includes(
-                lastPlayer,
-              )
-            ) {
-              next.push(
-                lastPlayer,
-              );
-            }
-          }
-
-          /*
-            変化がないなら
-            元の配列を返す。
-          */
-          if (
-            next.length ===
-            current.length
-          ) {
-            return current;
-          }
-
-          return next;
-        },
-      );
-    },
-    [
-      hands,
-    ],
-  );
-
-  /*
-    現在の場札。
-  */
   const fieldPlay =
     useMemo(
-      () =>
-        analyzePlay(
-          playedCards,
-        ),
+      () => analyzePlay(playedCards),
+      [playedCards],
+    );
+
+  const selectedCards =
+    hand.filter((card) =>
+      selectedCardIds.includes(
+        card.id,
+      ),
+    );
+
+  const selectedPlay =
+    analyzePlay(selectedCards);
+
+  const ruleContext =
+    useMemo(
+      () => ({
+        revolution,
+        elevenBack,
+        lockedSuit,
+        gekiShibari,
+        singleStrengthHistory,
+        fieldCards: playedCards,
+      }),
       [
+        revolution,
+        elevenBack,
+        lockedSuit,
+        gekiShibari,
+        singleStrengthHistory,
         playedCards,
       ],
     );
 
-  /*
-    ナノカの選択カード。
-  */
-  const selectedCards =
-    hand.filter(
-      (card) =>
-        selectedCardIds.includes(
-          card.id,
-        ),
-    );
-
-  const selectedPlay =
-    analyzePlay(
-      selectedCards,
-    );
-
-  /*
-    ナノカの全合法手。
-  */
   const allPlayerPlays =
     useMemo(
-      () =>
-        getAllValidPlays(
-          hand,
-        ),
-      [
-        hand,
-      ],
+      () => getAllValidPlays(hand),
+      [hand],
     );
 
-  /*
-    場に実際に出せる手だけ。
-  */
   const legalPlayerPlays =
     useMemo(
       () =>
@@ -387,40 +331,39 @@ export default function usePresidentGame() {
             canBeatPlay(
               play.analysis,
               fieldPlay,
+              {
+                ...ruleContext,
+                candidateCards:
+                  play.cards,
+              },
             ),
         ),
       [
         allPlayerPlays,
         fieldPlay,
+        ruleContext,
       ],
     );
 
-  /*
-    次に選択可能なカード。
-  */
   const playableCardIds =
-    useMemo(
-      () => {
-        if (
-          currentPlayerIndex !==
-            0 ||
-          isRoundFinished
-        ) {
-          return [];
-        }
+    useMemo(() => {
+      if (
+        currentPlayerIndex !== 0 ||
+        isRoundFinished
+      ) {
+        return [];
+      }
 
-        return getPlayableCardIds(
-          legalPlayerPlays,
-          selectedCardIds,
-        );
-      },
-      [
+      return getPlayableCardIds(
         legalPlayerPlays,
         selectedCardIds,
-        currentPlayerIndex,
-        isRoundFinished,
-      ],
-    );
+      );
+    }, [
+      legalPlayerPlays,
+      selectedCardIds,
+      currentPlayerIndex,
+      isRoundFinished,
+    ]);
 
   const canPlaySelectedCards =
     currentPlayerIndex === 0 &&
@@ -429,25 +372,342 @@ export default function usePresidentGame() {
     canBeatPlay(
       selectedPlay,
       fieldPlay,
+      {
+        ...ruleContext,
+        candidateCards:
+          selectedCards,
+      },
     );
 
-  /*
-    カード選択。
-  */
-  const toggleCardSelection = (
-    card,
-  ) => {
+  function resetTemporaryFieldRules() {
+    setElevenBack(false);
+    setLockedSuit(null);
+    setGekiShibari(false);
+    setSingleStrengthHistory([]);
+  }
+
+  function moveToNextActive(
+    nextHands,
+    playerIndex,
+  ) {
+    const nextPlayer =
+      getNextActivePlayerIndex(
+        nextHands,
+        playerIndex,
+      );
+
+    if (nextPlayer !== null) {
+      setCurrentPlayerIndex(
+        nextPlayer,
+      );
+    }
+  }
+
+  function clearFieldAfterSpecial(
+    nextHands,
+    playerIndex,
+  ) {
+    setPlayedCards([]);
+    setLastPlayPlayerIndex(null);
+    setConsecutivePasses(0);
+    resetTemporaryFieldRules();
+
+    /*
+      8切り・スペ3返しは
+      出した本人から再開。
+      上がっていれば次の生存者。
+    */
     if (
-      currentPlayerIndex !==
-        0 ||
+      nextHands[playerIndex]
+        .length > 0
+    ) {
+      setCurrentPlayerIndex(
+        playerIndex,
+      );
+      return;
+    }
+
+    moveToNextActive(
+      nextHands,
+      playerIndex,
+    );
+  }
+
+  function registerFinish({
+    playerIndex,
+    cards,
+    nextHands,
+  }) {
+    if (
+      nextHands[playerIndex]
+        .length !== 0
+    ) {
+      return false;
+    }
+
+    if (containsJoker(cards)) {
+      setForbiddenFinishPlayerIndex(
+        playerIndex,
+      );
+
+      return true;
+    }
+
+    setNormalFinishOrder(
+      (current) =>
+        current.includes(playerIndex)
+          ? current
+          : [...current, playerIndex],
+    );
+
+    return false;
+  }
+
+  /*
+    1回のカードプレイによる
+    特殊ルールを反映する。
+  */
+  function applyPlayRules({
+    cards,
+    analysis,
+    playerIndex,
+    nextHands,
+    forbiddenFinish,
+  }) {
+    const effects =
+      getPlayEffects(
+        cards,
+        analysis,
+      );
+
+    const spadeThreeReturn =
+      isSingleJoker(playedCards) &&
+      isSpadeThree(cards);
+
+    /*
+      スペ3返しは完全単独表示。
+    */
+    if (spadeThreeReturn) {
+      setLastRuleEvents([
+        "spadeThree",
+        ...(forbiddenFinish
+          ? ["forbiddenFinish"]
+          : []),
+      ]);
+
+      clearFieldAfterSpecial(
+        nextHands,
+        playerIndex,
+      );
+
+      return;
+    }
+
+    const events = [];
+
+    /*
+      革命は場が流れても残る。
+      4枚以上なら毎回反転する。
+    */
+    if (effects.revolution) {
+      setRevolution(
+        (current) => !current,
+      );
+      events.push("revolution");
+    }
+
+    /*
+      8切りがある場合、
+      革命だけは先に成立する。
+
+      縛り・激シバ・11バックは
+      場が即座に流れるため発生させない。
+    */
+    if (effects.eightCut) {
+      events.push("eightCut");
+
+      if (forbiddenFinish) {
+        events.push(
+          "forbiddenFinish",
+        );
+      }
+
+      setLastRuleEvents(events);
+
+      clearFieldAfterSpecial(
+        nextHands,
+        playerIndex,
+      );
+
+      return;
+    }
+
+    /*
+      シングル限定の縛り・激シバ。
+    */
+    let nextLockedSuit = lockedSuit;
+    let nextGeki = gekiShibari;
+
+    if (
+      analysis.type === "single" &&
+      !isSingleJoker(cards)
+    ) {
+      const candidateSuit =
+        getSingleNaturalSuit(cards);
+
+      const candidateStrength =
+        getSingleNaturalStrength(cards);
+
+      const previousSuit =
+        getSingleNaturalSuit(
+          playedCards,
+        );
+
+      const previousStrength =
+        getSingleNaturalStrength(
+          playedCards,
+        );
+
+      const sameSuit =
+        candidateSuit &&
+        previousSuit &&
+        candidateSuit === previousSuit;
+
+      const consecutive =
+        previousStrength !== null &&
+        candidateStrength !== null &&
+        Math.abs(
+          candidateStrength -
+            previousStrength,
+        ) === 1;
+
+      /*
+        激シバが新しく成立。
+        通常の縛りよりこちらを優先表示。
+      */
+      if (
+        sameSuit &&
+        consecutive &&
+        !gekiShibari
+      ) {
+        nextLockedSuit =
+          candidateSuit;
+        nextGeki = true;
+
+        setLockedSuit(
+          candidateSuit,
+        );
+        setGekiShibari(true);
+        events.push("gekiShibari");
+      } else if (
+        sameSuit &&
+        !lockedSuit
+      ) {
+        nextLockedSuit =
+          candidateSuit;
+
+        setLockedSuit(
+          candidateSuit,
+        );
+        events.push("shibari");
+      }
+
+      setSingleStrengthHistory(
+        (current) => [
+          ...current,
+          candidateStrength,
+        ],
+      );
+    }
+
+    /*
+      Jを含んでいれば11バック。
+      既に11バック中なら
+      二重反転はさせず継続。
+    */
+    if (
+      effects.elevenBack &&
+      !elevenBack
+    ) {
+      setElevenBack(true);
+      events.push("elevenBack");
+    }
+
+    if (forbiddenFinish) {
+      events.push("forbiddenFinish");
+    }
+
+    setLastRuleEvents(events);
+
+    /*
+      通常の場更新。
+    */
+    setPlayedCards(cards);
+    setLastPlayPlayerIndex(
+      playerIndex,
+    );
+    setConsecutivePasses(0);
+
+    /*
+      nextLockedSuit / nextGekiは
+      React更新前の説明用変数。
+      状態自体は上で更新済み。
+    */
+    void nextLockedSuit;
+    void nextGeki;
+
+    moveToNextActive(
+      nextHands,
+      playerIndex,
+    );
+  }
+
+  function commitPlay({
+    playerIndex,
+    play,
+  }) {
+    const chosenIds =
+      new Set(play.cardIds);
+
+    const nextHands =
+      hands.map(
+        (currentHand, index) =>
+          index === playerIndex
+            ? currentHand.filter(
+                (card) =>
+                  !chosenIds.has(
+                    card.id,
+                  ),
+              )
+            : currentHand,
+      );
+
+    setHands(nextHands);
+
+    const forbiddenFinish =
+      registerFinish({
+        playerIndex,
+        cards: play.cards,
+        nextHands,
+      });
+
+    applyPlayRules({
+      cards: play.cards,
+      analysis: play.analysis,
+      playerIndex,
+      nextHands,
+      forbiddenFinish,
+    });
+  }
+
+  function toggleCardSelection(card) {
+    if (
+      currentPlayerIndex !== 0 ||
       isRoundFinished
     ) {
       return;
     }
 
-    /*
-      選択解除。
-    */
     if (
       selectedCardIds.includes(
         card.id,
@@ -457,18 +717,12 @@ export default function usePresidentGame() {
         (current) =>
           current.filter(
             (cardId) =>
-              cardId !==
-              card.id,
+              cardId !== card.id,
           ),
       );
-
       return;
     }
 
-    /*
-      赤くないカードは
-      選択できない。
-    */
     if (
       !playableCardIds.includes(
         card.id,
@@ -483,130 +737,56 @@ export default function usePresidentGame() {
         card.id,
       ],
     );
-  };
+  }
 
-  /*
-    ==============================
-    ナノカがカードを出す
-    ==============================
-  */
-  const playSelectedCards = () => {
-    if (
-      currentPlayerIndex !==
-        0 ||
-      isRoundFinished
-    ) {
-      return;
-    }
-
-    if (
-      !canPlaySelectedCards
-    ) {
+  function playSelectedCards() {
+    if (!canPlaySelectedCards) {
       return;
     }
 
     const selectedSet =
-      new Set(
-        selectedCardIds,
-      );
+      new Set(selectedCardIds);
 
     const cardsToPlay =
-      hand.filter(
-        (card) =>
-          selectedSet.has(
-            card.id,
-          ),
+      hand.filter((card) =>
+        selectedSet.has(card.id),
       );
 
-    /*
-      カードを出した後の
-      4人分の手札を先に作る。
-    */
-    const nextHands =
-      hands.map(
-        (
-          currentHand,
-          playerIndex,
-        ) => {
-          if (
-            playerIndex !== 0
-          ) {
-            return currentHand;
-          }
+    commitPlay({
+      playerIndex: 0,
+      play: {
+        cards: cardsToPlay,
+        cardIds: cardsToPlay.map(
+          (card) => card.id,
+        ),
+        analysis:
+          analyzePlay(cardsToPlay),
+      },
+    });
 
-          return currentHand.filter(
-            (card) =>
-              !selectedSet.has(
-                card.id,
-              ),
-          );
-        },
+    setSelectedCardIds([]);
+  }
+
+  function clearFieldByPasses() {
+    const leader =
+      getLeaderAfterClear(
+        hands,
+        lastPlayPlayerIndex,
       );
 
-    setHands(
-      nextHands,
-    );
+    setPlayedCards([]);
+    setLastPlayPlayerIndex(null);
+    setConsecutivePasses(0);
+    setLastRuleEvents([]);
+    resetTemporaryFieldRules();
 
-    setPlayedCards(
-      cardsToPlay,
-    );
-
-    setLastPlayPlayerIndex(
-      0,
-    );
-
-    setConsecutivePasses(
-      0,
-    );
-
-    setSelectedCardIds(
-      [],
-    );
-
-    /*
-      ナノカがこれで上がっても、
-      次の生存プレイヤーへ進む。
-    */
-    const nextPlayer =
-      getNextActivePlayerIndex(
-        nextHands,
-        0,
-      );
-
-    if (
-      nextPlayer !== null
-    ) {
-      setCurrentPlayerIndex(
-        nextPlayer,
-      );
+    if (leader !== null) {
+      setCurrentPlayerIndex(leader);
     }
-  };
+  }
 
-  /*
-    ==============================
-    ナノカがパス
-    ==============================
-  */
-  const passTurn = () => {
-    if (
-      currentPlayerIndex !==
-        0 ||
-      isRoundFinished
-    ) {
-      return;
-    }
-
-    setSelectedCardIds(
-      [],
-    );
-
-    /*
-      場が空ならパス不可。
-    */
-    if (
-      playedCards.length ===
-      0
-    ) {
+  function handlePass(playerIndex) {
+    if (playedCards.length === 0) {
       return;
     }
 
@@ -619,38 +799,12 @@ export default function usePresidentGame() {
         lastPlayPlayerIndex,
       );
 
-    /*
-      残っている他プレイヤーが
-      全員パスした。
-    */
     if (
       nextPassCount >=
         requiredPassCount &&
-      lastPlayPlayerIndex !==
-        null
+      lastPlayPlayerIndex !== null
     ) {
-      const leader =
-        getLeaderAfterClear(
-          hands,
-          lastPlayPlayerIndex,
-        );
-
-      setPlayedCards(
-        [],
-      );
-
-      setConsecutivePasses(
-        0,
-      );
-
-      if (
-        leader !== null
-      ) {
-        setCurrentPlayerIndex(
-          leader,
-        );
-      }
-
+      clearFieldByPasses();
       return;
     }
 
@@ -661,305 +815,110 @@ export default function usePresidentGame() {
     const nextPlayer =
       getNextActivePlayerIndex(
         hands,
-        0,
+        playerIndex,
       );
 
-    if (
-      nextPlayer !== null
-    ) {
+    if (nextPlayer !== null) {
       setCurrentPlayerIndex(
         nextPlayer,
       );
     }
-  };
+  }
 
-  /*
-    ==============================
-    CPUターン
-    ==============================
-  */
-  useEffect(
-    () => {
-      /*
-        ナノカの番。
-      */
-      if (
-        currentPlayerIndex === 0
-      ) {
-        return undefined;
+  function passTurn() {
+    if (
+      currentPlayerIndex !== 0 ||
+      isRoundFinished
+    ) {
+      return;
+    }
+
+    setSelectedCardIds([]);
+    handlePass(0);
+  }
+
+  useEffect(() => {
+    if (
+      currentPlayerIndex === 0 ||
+      isRoundFinished
+    ) {
+      return undefined;
+    }
+
+    if (
+      hands[currentPlayerIndex]
+        .length === 0
+    ) {
+      const nextPlayer =
+        getNextActivePlayerIndex(
+          hands,
+          currentPlayerIndex,
+        );
+
+      if (nextPlayer !== null) {
+        setCurrentPlayerIndex(
+          nextPlayer,
+        );
       }
 
-      /*
-        順位確定後は停止。
-      */
-      if (
-        isRoundFinished
-      ) {
-        return undefined;
-      }
+      return undefined;
+    }
 
-      /*
-        念のため、
-        既に上がっているCPUなら
-        次へ飛ばす。
-      */
-      if (
-        hands[
-          currentPlayerIndex
-        ].length === 0
-      ) {
-        const nextPlayer =
-          getNextActivePlayerIndex(
-            hands,
-            currentPlayerIndex,
+    const timerId =
+      window.setTimeout(() => {
+        const cpuIndex =
+          currentPlayerIndex;
+
+        const cpuHand =
+          hands[cpuIndex];
+
+        const legalCpuPlays =
+          getAllValidPlays(
+            cpuHand,
+          ).filter((play) =>
+            canBeatPlay(
+              play.analysis,
+              fieldPlay,
+              {
+                ...ruleContext,
+                candidateCards:
+                  play.cards,
+              },
+            ),
           );
 
-        if (
-          nextPlayer !== null
-        ) {
-          setCurrentPlayerIndex(
-            nextPlayer,
-          );
+        /*
+          暫定CPUは
+          一番左側から作れる
+          最初の合法手。
+        */
+        const chosenPlay =
+          legalCpuPlays[0];
+
+        if (chosenPlay) {
+          commitPlay({
+            playerIndex: cpuIndex,
+            play: chosenPlay,
+          });
+          return;
         }
 
-        return undefined;
-      }
+        handlePass(cpuIndex);
+      }, CPU_THINK_TIME);
 
-      const timerId =
-        window.setTimeout(
-          () => {
-            const cpuIndex =
-              currentPlayerIndex;
-
-            const cpuHand =
-              hands[
-                cpuIndex
-              ];
-
-            /*
-              CPUが作れる
-              全合法手。
-            */
-            const allCpuPlays =
-              getAllValidPlays(
-                cpuHand,
-              );
-
-            /*
-              場札に勝てる手。
-            */
-            const legalCpuPlays =
-              allCpuPlays.filter(
-                (play) =>
-                  canBeatPlay(
-                    play.analysis,
-                    fieldPlay,
-                  ),
-              );
-
-            /*
-              暫定CPU。
-
-              一番左側から作れる
-              最初の合法手を出す。
-            */
-            const chosenPlay =
-              legalCpuPlays[
-                0
-              ];
-
-            /*
-              ======================
-              CPUがカードを出す
-              ======================
-            */
-            if (
-              chosenPlay
-            ) {
-              const chosenIds =
-                new Set(
-                  chosenPlay.cardIds,
-                );
-
-              /*
-                カードを出した後の
-                手札を作る。
-              */
-              const nextHands =
-                hands.map(
-                  (
-                    currentHand,
-                    playerIndex,
-                  ) => {
-                    if (
-                      playerIndex !==
-                      cpuIndex
-                    ) {
-                      return currentHand;
-                    }
-
-                    return currentHand.filter(
-                      (card) =>
-                        !chosenIds.has(
-                          card.id,
-                        ),
-                    );
-                  },
-                );
-
-              setHands(
-                nextHands,
-              );
-
-              setPlayedCards(
-                chosenPlay.cards,
-              );
-
-              setLastPlayPlayerIndex(
-                cpuIndex,
-              );
-
-              setConsecutivePasses(
-                0,
-              );
-
-              /*
-                CPUが上がった場合でも、
-                次の生存者へ。
-              */
-              const nextPlayer =
-                getNextActivePlayerIndex(
-                  nextHands,
-                  cpuIndex,
-                );
-
-              if (
-                nextPlayer !==
-                null
-              ) {
-                setCurrentPlayerIndex(
-                  nextPlayer,
-                );
-              }
-
-              return;
-            }
-
-            /*
-              ======================
-              出せないのでパス
-              ======================
-            */
-            if (
-              playedCards.length ===
-              0
-            ) {
-              /*
-                場が空なら本来
-                必ず何か出せる。
-              */
-              const nextPlayer =
-                getNextActivePlayerIndex(
-                  hands,
-                  cpuIndex,
-                );
-
-              if (
-                nextPlayer !==
-                null
-              ) {
-                setCurrentPlayerIndex(
-                  nextPlayer,
-                );
-              }
-
-              return;
-            }
-
-            const nextPassCount =
-              consecutivePasses +
-              1;
-
-            const requiredPassCount =
-              getRequiredPassCount(
-                hands,
-                lastPlayPlayerIndex,
-              );
-
-            /*
-              残っている人が
-              全員パス。
-            */
-            if (
-              nextPassCount >=
-                requiredPassCount &&
-              lastPlayPlayerIndex !==
-                null
-            ) {
-              const leader =
-                getLeaderAfterClear(
-                  hands,
-                  lastPlayPlayerIndex,
-                );
-
-              setPlayedCards(
-                [],
-              );
-
-              setConsecutivePasses(
-                0,
-              );
-
-              if (
-                leader !==
-                null
-              ) {
-                setCurrentPlayerIndex(
-                  leader,
-                );
-              }
-
-              return;
-            }
-
-            setConsecutivePasses(
-              nextPassCount,
-            );
-
-            const nextPlayer =
-              getNextActivePlayerIndex(
-                hands,
-                cpuIndex,
-              );
-
-            if (
-              nextPlayer !==
-              null
-            ) {
-              setCurrentPlayerIndex(
-                nextPlayer,
-              );
-            }
-          },
-          CPU_THINK_TIME,
-        );
-
-      return () => {
-        window.clearTimeout(
-          timerId,
-        );
-      };
-    },
-    [
-      currentPlayerIndex,
-      hands,
-      fieldPlay,
-      playedCards,
-      consecutivePasses,
-      lastPlayPlayerIndex,
-      isRoundFinished,
-    ],
-  );
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [
+    currentPlayerIndex,
+    hands,
+    fieldPlay,
+    ruleContext,
+    playedCards,
+    consecutivePasses,
+    lastPlayPlayerIndex,
+    isRoundFinished,
+  ]);
 
   return {
     hands,
@@ -977,10 +936,17 @@ export default function usePresidentGame() {
     playedCards,
     fieldPlay,
 
-    /*
-      順位関係。
-    */
+    revolution,
+    elevenBack,
+    lockedSuit,
+    gekiShibari,
+    singleStrengthHistory,
+
+    lastRuleEvents,
+
     finishOrder,
+    normalFinishOrder,
+    forbiddenFinishPlayerIndex,
     isRoundFinished,
 
     toggleCardSelection,

@@ -1,36 +1,40 @@
 import {
   getCardStrength,
-} from "./cardUtils";
+} from "./cardUtils.js";
 
-/*
-  Jokerの枚数を取得。
-  現在のルールでは1枚だけだが、
-  判定処理としては汎用的にしておく。
-*/
-function getJokerCount(cards) {
-  return cards.filter(
-    (card) =>
-      card.isJoker ||
-      card.suit === "joker",
-  ).length;
-}
-
-/*
-  Joker以外のカードだけ取得。
-*/
-function getNormalCards(cards) {
-  return cards.filter(
-    (card) =>
-      !card.isJoker &&
-      card.suit !== "joker",
+export function isJoker(card) {
+  return Boolean(
+    card?.isJoker ||
+    card?.suit === "joker",
   );
 }
 
-/*
-  ==============================
-  ペア・トリオ・クワッズ判定
-  ==============================
-*/
+function getJokerCount(cards) {
+  return cards.filter(isJoker).length;
+}
+
+function getNormalCards(cards) {
+  return cards.filter(
+    (card) => !isJoker(card),
+  );
+}
+
+export function isSingleJoker(cards) {
+  return (
+    cards.length === 1 &&
+    isJoker(cards[0])
+  );
+}
+
+export function isSpadeThree(cards) {
+  return (
+    cards.length === 1 &&
+    !isJoker(cards[0]) &&
+    cards[0].suit === "spades" &&
+    getCardStrength(cards[0]) === 3
+  );
+}
+
 function analyzeSameRankPlay(cards) {
   if (
     cards.length < 2 ||
@@ -42,35 +46,20 @@ function analyzeSameRankPlay(cards) {
   const normalCards =
     getNormalCards(cards);
 
-  const jokerCount =
-    getJokerCount(cards);
-
-  /*
-    Jokerしかない場合。
-    現在Jokerは1枚なので
-    通常ここには来ない。
-  */
   if (normalCards.length === 0) {
     return null;
   }
 
-  const baseStrength =
-    getCardStrength(
-      normalCards[0],
-    );
+  const strength =
+    getCardStrength(normalCards[0]);
 
-  /*
-    Joker以外が全て同じ数字なら
-    Jokerをその数字として扱える。
-  */
-  const allSameRank =
-    normalCards.every(
+  if (
+    !normalCards.every(
       (card) =>
         getCardStrength(card) ===
-        baseStrength,
-    );
-
-  if (!allSameRank) {
+        strength,
+    )
+  ) {
     return null;
   }
 
@@ -82,32 +71,14 @@ function analyzeSameRankPlay(cards) {
 
   return {
     valid: true,
-
-    type:
-      typeByCount[cards.length],
-
-    count:
-      cards.length,
-
-    strength:
-      baseStrength,
-
-    jokerCount,
+    type: typeByCount[cards.length],
+    count: cards.length,
+    strength,
+    jokerCount: getJokerCount(cards),
   };
 }
 
-/*
-  ==============================
-  階段として成立する
-  全パターンを取得
-  ==============================
-*/
-export function getStraightOptions(
-  cards,
-) {
-  /*
-    階段は3枚以上。
-  */
+export function getStraightOptions(cards) {
   if (cards.length < 3) {
     return [];
   }
@@ -122,39 +93,21 @@ export function getStraightOptions(
     return [];
   }
 
-  /*
-    Joker以外は
-    全て同じスートである必要がある。
-  */
-  const suit =
-    normalCards[0].suit;
+  const suit = normalCards[0].suit;
 
-  const sameSuit =
-    normalCards.every(
-      (card) =>
-        card.suit === suit,
-    );
-
-  if (!sameSuit) {
+  if (
+    !normalCards.every(
+      (card) => card.suit === suit,
+    )
+  ) {
     return [];
   }
 
-  /*
-    3～Jokerを
-    3～16として扱う。
-  */
   const strengths =
     normalCards
       .map(getCardStrength)
-      .sort(
-        (a, b) =>
-          a - b,
-      );
+      .sort((a, b) => a - b);
 
-  /*
-    同じ数字が混ざっていたら
-    階段にはならない。
-  */
   const uniqueStrengths =
     new Set(strengths);
 
@@ -167,10 +120,6 @@ export function getStraightOptions(
 
   const options = [];
 
-  /*
-    3 ～ Joker(16)の範囲で
-    作れる全ての連番を調べる。
-  */
   for (
     let startStrength = 3;
     startStrength +
@@ -184,18 +133,11 @@ export function getStraightOptions(
       cards.length -
       1;
 
-    /*
-      Joker以外のカードが
-      この階段の範囲内に
-      全て入っているか。
-    */
     const allInsideRange =
       strengths.every(
         (strength) =>
-          strength >=
-            startStrength &&
-          strength <=
-            endStrength,
+          strength >= startStrength &&
+          strength <= endStrength,
       );
 
     if (!allInsideRange) {
@@ -205,27 +147,17 @@ export function getStraightOptions(
     const missingStrengths = [];
 
     for (
-      let strength =
-        startStrength;
+      let strength = startStrength;
       strength <= endStrength;
       strength += 1
     ) {
       if (
-        !uniqueStrengths.has(
-          strength,
-        )
+        !uniqueStrengths.has(strength)
       ) {
-        missingStrengths.push(
-          strength,
-        );
+        missingStrengths.push(strength);
       }
     }
 
-    /*
-      足りない数字を
-      Jokerですべて補えるなら
-      正しい階段。
-    */
     if (
       missingStrengths.length !==
       jokerCount
@@ -236,10 +168,8 @@ export function getStraightOptions(
     options.push({
       startStrength,
       endStrength,
-
       jokerStrengths:
         missingStrengths,
-
       suit,
     });
   }
@@ -247,11 +177,6 @@ export function getStraightOptions(
   return options;
 }
 
-/*
-  ==============================
-  階段判定
-  ==============================
-*/
 function analyzeStraight(cards) {
   const options =
     getStraightOptions(cards);
@@ -261,51 +186,32 @@ function analyzeStraight(cards) {
   }
 
   /*
-    Jokerによって複数の階段として
-    解釈できる場合がある。
-
-    例：
-    5 6 Joker
-
-    → 4 5 6
-    → 5 6 7
-
-    通常時は最も強い解釈を
-    strengthに入れる。
-
-    全候補はstraightOptionsへ
-    保存しておく。
+    Jokerは成立可能な中で
+    必ず最も大きい数字を担当する。
   */
-  const strength = Math.max(
-    ...options.map(
-      (option) =>
-        option.endStrength,
-    ),
-  );
+  const resolvedStraight =
+    options.reduce(
+      (best, option) =>
+        !best ||
+        option.endStrength >
+          best.endStrength
+          ? option
+          : best,
+      null,
+    );
 
   return {
     valid: true,
-
     type: "straight",
-
-    count:
-      cards.length,
-
-    strength,
-
-    straightOptions:
-      options,
-
-    jokerCount:
-      getJokerCount(cards),
+    count: cards.length,
+    strength:
+      resolvedStraight.endStrength,
+    straightOptions: options,
+    resolvedStraight,
+    jokerCount: getJokerCount(cards),
   };
 }
 
-/*
-  ==============================
-  選択したカード全体の役判定
-  ==============================
-*/
 export function analyzePlay(cards) {
   if (
     !Array.isArray(cards) ||
@@ -318,95 +224,167 @@ export function analyzePlay(cards) {
     };
   }
 
-  /*
-    1枚なら必ずシングル。
-
-    Joker単体なら
-    strength = 16。
-  */
   if (cards.length === 1) {
     return {
       valid: true,
-
       type: "single",
-
       count: 1,
-
       strength:
-        getCardStrength(
-          cards[0],
-        ),
-
+        getCardStrength(cards[0]),
       jokerCount:
         getJokerCount(cards),
     };
   }
 
-  /*
-    同じ数字系から判定。
-  */
-  const sameRankPlay =
-    analyzeSameRankPlay(
-      cards,
-    );
+  const sameRank =
+    analyzeSameRankPlay(cards);
 
-  if (sameRankPlay) {
-    return sameRankPlay;
+  if (sameRank) {
+    return sameRank;
   }
 
-  /*
-    次に階段判定。
-  */
-  const straightPlay =
-    analyzeStraight(
-      cards,
-    );
+  const straight =
+    analyzeStraight(cards);
 
-  if (straightPlay) {
-    return straightPlay;
+  if (straight) {
+    return straight;
   }
 
   return {
     valid: false,
     type: "invalid",
-    count:
-      cards.length,
+    count: cards.length,
   };
 }
 
 /*
-  ==============================
-  現在の選択へ
-  このカードを追加できるか
-  ==============================
-
-  今回はまず
-
-  single
-    ↓
-  pair
-    ↓
-  trio
-    ↓
-  quads
-
-  の選択を実装する。
-
-  階段の選択補助は
-  この後追加する。
+  Jokerの最高解釈まで含め、
+  この手が実際に表している数字を返す。
 */
+export function getResolvedStrengths(
+  cards,
+  analysis = analyzePlay(cards),
+) {
+  if (!analysis.valid) {
+    return [];
+  }
+
+  if (analysis.type === "straight") {
+    const option =
+      analysis.resolvedStraight;
+
+    if (!option) {
+      return [];
+    }
+
+    const strengths = [];
+
+    for (
+      let strength =
+        option.startStrength;
+      strength <= option.endStrength;
+      strength += 1
+    ) {
+      strengths.push(strength);
+    }
+
+    return strengths;
+  }
+
+  return [analysis.strength];
+}
+
+export function getPlayEffects(
+  cards,
+  analysis = analyzePlay(cards),
+) {
+  const strengths =
+    getResolvedStrengths(
+      cards,
+      analysis,
+    );
+
+  return {
+    revolution:
+      analysis.valid &&
+      cards.length >= 4,
+
+    eightCut:
+      strengths.includes(8),
+
+    elevenBack:
+      strengths.includes(11),
+  };
+}
+
+export function getSingleNaturalSuit(
+  cards,
+) {
+  if (
+    cards.length !== 1 ||
+    isJoker(cards[0])
+  ) {
+    return null;
+  }
+
+  return cards[0].suit;
+}
+
+export function getSingleNaturalStrength(
+  cards,
+) {
+  if (
+    cards.length !== 1 ||
+    isJoker(cards[0])
+  ) {
+    return null;
+  }
+
+  return getCardStrength(cards[0]);
+}
 
 /*
-  ==============================
-  この手札から作れる
-  全ての合法手を列挙
-  ==============================
-*/
-export function getAllValidPlays(
-  hand,
-) {
-  const validPlays = [];
+  激シバ中の次の自然札。
 
+  革命と11バックを合わせた
+  現在の強弱方向へ進み、
+  今回の場ですでに使われた数字を飛ばす。
+*/
+export function getGekiRequiredStrength({
+  fieldStrength,
+  usedStrengths,
+  revolution,
+  elevenBack,
+}) {
+  const reversed =
+    Boolean(revolution) !==
+    Boolean(elevenBack);
+
+  const step = reversed ? -1 : 1;
+
+  let strength =
+    fieldStrength + step;
+
+  while (
+    strength >= 3 &&
+    strength <= 15
+  ) {
+    if (
+      !usedStrengths.includes(
+        strength,
+      )
+    ) {
+      return strength;
+    }
+
+    strength += step;
+  }
+
+  return null;
+}
+
+export function getAllValidPlays(hand) {
+  const validPlays = [];
   const combinationCount =
     1 << hand.length;
 
@@ -422,13 +400,8 @@ export function getAllValidPlays(
       index < hand.length;
       index += 1
     ) {
-      if (
-        mask &
-        (1 << index)
-      ) {
-        cards.push(
-          hand[index],
-        );
+      if (mask & (1 << index)) {
+        cards.push(hand[index]);
       }
     }
 
@@ -441,13 +414,9 @@ export function getAllValidPlays(
 
     validPlays.push({
       cards,
-
-      cardIds:
-        cards.map(
-          (card) =>
-            card.id,
-        ),
-
+      cardIds: cards.map(
+        (card) => card.id,
+      ),
       analysis,
     });
   }
@@ -455,27 +424,13 @@ export function getAllValidPlays(
   return validPlays;
 }
 
-/*
-  ==============================
-  現在の選択から
-  次に選択できるカードを取得
-  ==============================
-*/
 export function getPlayableCardIds(
   validPlays,
   selectedCardIds,
 ) {
-  const playableIds =
-    new Set();
+  const playableIds = new Set();
 
-  for (
-    const play
-    of validPlays
-  ) {
-    /*
-      現在選択しているカードが
-      この合法手に全部含まれるか。
-    */
+  for (const play of validPlays) {
     const containsSelection =
       selectedCardIds.every(
         (selectedId) =>
@@ -488,126 +443,146 @@ export function getPlayableCardIds(
       continue;
     }
 
-    /*
-      この合法手を完成させるために
-      追加可能なカードを赤くする。
-    */
-    for (
-      const cardId
-      of play.cardIds
-    ) {
+    for (const cardId of play.cardIds) {
       if (
-        selectedCardIds.includes(
-          cardId,
-        )
+        !selectedCardIds.includes(cardId)
       ) {
-        continue;
+        playableIds.add(cardId);
       }
-
-      playableIds.add(
-        cardId,
-      );
     }
   }
 
-  return [
-    ...playableIds,
-  ];
+  return [...playableIds];
 }
 
 /*
-  ==============================
-  場札に対して
-  この役を出せるか
-  ==============================
+  現在の革命・11バック・縛り・激シバを
+  全て含めた場札比較。
 */
 export function canBeatPlay(
   candidatePlay,
   fieldPlay,
+  {
+    candidateCards = [],
+    fieldCards = [],
+    revolution = false,
+    elevenBack = false,
+    lockedSuit = null,
+    gekiShibari = false,
+    singleStrengthHistory = [],
+  } = {},
 ) {
-  /*
-    候補そのものが不正なら
-    出せない。
-  */
   if (
-    !candidatePlay ||
-    !candidatePlay.valid
+    !candidatePlay?.valid
   ) {
     return false;
   }
 
-  /*
-    場が空なら
-    どんな合法手でも出せる。
-  */
-  if (
-    !fieldPlay ||
-    !fieldPlay.valid
-  ) {
+  if (!fieldPlay?.valid) {
     return true;
   }
 
   /*
-    シングルにはシングル、
-    ペアにはペア、
-    階段には階段。
+    単独Jokerは縛りも激シバも無視。
   */
+  if (isSingleJoker(candidateCards)) {
+    return (
+      fieldPlay.type === "single" &&
+      !isSingleJoker(fieldCards)
+    );
+  }
+
+  /*
+    Joker単独へのスペ3返し。
+    スート縛りも無視する。
+  */
+  if (isSingleJoker(fieldCards)) {
+    return isSpadeThree(
+      candidateCards,
+    );
+  }
+
   if (
     candidatePlay.type !==
-    fieldPlay.type
-  ) {
-    return false;
-  }
-
-  /*
-    枚数も同じ必要がある。
-
-    特に階段では、
-    3枚階段に4枚階段を
-    重ねることはできない。
-  */
-  if (
+      fieldPlay.type ||
     candidatePlay.count !==
-    fieldPlay.count
+      fieldPlay.count
   ) {
     return false;
   }
 
-  /*
-    今は革命なし。
+  if (
+    candidatePlay.type === "single" &&
+    lockedSuit
+  ) {
+    if (
+      getSingleNaturalSuit(
+        candidateCards,
+      ) !== lockedSuit
+    ) {
+      return false;
+    }
+  }
 
-    数字が大きいほど強い。
-  */
+  if (
+    candidatePlay.type === "single" &&
+    gekiShibari
+  ) {
+    const requiredStrength =
+      getGekiRequiredStrength({
+        fieldStrength:
+          fieldPlay.strength,
+        usedStrengths:
+          singleStrengthHistory,
+        revolution,
+        elevenBack,
+      });
+
+    if (
+      requiredStrength === null ||
+      candidatePlay.strength !==
+        requiredStrength
+    ) {
+      return false;
+    }
+  }
+
+  const reversed =
+    Boolean(revolution) !==
+    Boolean(elevenBack);
+
+  if (reversed) {
+    return (
+      candidatePlay.strength <
+      fieldPlay.strength
+    );
+  }
+
   return (
     candidatePlay.strength >
     fieldPlay.strength
   );
 }
 
-/*
-  ==============================
-  現在の場に出せる合法手だけ取得
-  ==============================
-*/
 export function getLegalPlaysAgainstField(
   hand,
   fieldCards,
+  context = {},
 ) {
-  const allPlays =
-    getAllValidPlays(
-      hand,
-    );
-
   const fieldPlay =
-    analyzePlay(
-      fieldCards,
-    );
+    analyzePlay(fieldCards);
 
-  return allPlays.filter(
+  return getAllValidPlays(hand).filter(
     (play) =>
       canBeatPlay(
         play.analysis,
         fieldPlay,
+        {
+          ...context,
+          candidateCards:
+            play.cards,
+          fieldCards,
+        },
       ),
   );
 }
