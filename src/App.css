@@ -1341,3 +1341,669 @@ button {
     transform: scale(1);
   }
 }
+
+/* ========================================
+   PRESIDENT ROUND SCORE NOTEBOOK
+======================================== */
+
+.roundNotebookOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    rgba(14, 3, 8, 0.82);
+
+  backdrop-filter: blur(5px);
+}
+
+.roundNotebook {
+  position: relative;
+
+  width: 1240px;
+  min-height: 790px;
+
+  padding:
+    55px
+    65px
+    42px;
+
+  overflow: hidden;
+
+  color: #312617;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(109, 69, 30, 0.08),
+      transparent 8%,
+      transparent 92%,
+      rgba(109, 69, 30, 0.08)
+    ),
+    linear-gradient(
+      180deg,
+      #f8edcf 0%,
+      #f2dfb6 100%
+    );
+
+  border:
+    3px solid #b68a42;
+
+  border-radius: 12px;
+
+  box-shadow:
+    0 25px 65px
+      rgba(0, 0, 0, 0.6),
+    inset 0 0 45px
+      rgba(112, 68, 21, 0.13);
+
+  animation:
+    roundNotebookEnter
+    360ms
+    ease-out
+    both;
+}
+
+@keyframes roundNotebookEnter {
+  from {
+    opacity: 0;
+
+    transform:
+      translateY(25px)
+      scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}
+
+
+/* ----------------------------------------
+   左側の製本風装飾
+---------------------------------------- */
+
+.roundNotebookBinding {
+  position: absolute;
+
+  top: 0;
+  bottom: 0;
+  left: 24px;
+
+  width: 18px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content:
+    space-evenly;
+
+  border-left:
+    2px solid
+    rgba(102, 64, 25, 0.22);
+
+  border-right:
+    2px solid
+    rgba(102, 64, 25, 0.22);
+}
+
+.roundNotebookBinding span {
+  width: 18px;
+  height: 18px;
+
+  margin-left: -2px;
+
+  border:
+    3px solid #755128;
+
+  border-radius: 50%;
+
+  background: #d7b873;
+
+  box-shadow:
+    inset 0 2px 3px
+      rgba(255, 255, 255, 0.5);
+}
+
+
+/* ----------------------------------------
+   HEADER
+---------------------------------------- */
+
+.roundNotebookHeader {
+  display: flex;
+
+  align-items: flex-end;
+  justify-content:
+    space-between;
+
+  min-height: 110px;
+
+  margin-bottom: 32px;
+
+  padding-bottom: 18px;
+
+  border-bottom:
+    2px solid
+    rgba(111, 73, 32, 0.38);
+}
+
+.roundNotebookSubTitle {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #876328;
+
+  font-family:
+    "Cinzel",
+    serif;
+
+  font-size: 16px;
+  font-weight: 700;
+
+  letter-spacing: 0.32em;
+}
+
+.roundNotebookHeader h2 {
+  margin: 0;
+
+  color: #4f3418;
+
+  font-family:
+    "Noto Serif JP",
+    "Yu Mincho",
+    serif;
+
+  font-size: 44px;
+  font-weight: 900;
+
+  letter-spacing: 0.08em;
+}
+
+
+/* ----------------------------------------
+   配点表示
+---------------------------------------- */
+
+.roundNotebookRule {
+  position: relative;
+
+  min-width: 370px;
+
+  padding: 12px 18px;
+
+  border:
+    1px solid
+    rgba(116, 77, 31, 0.35);
+
+  background:
+    rgba(255, 250, 228, 0.35);
+}
+
+.roundNotebookRuleRow {
+  display: grid;
+
+  grid-template-columns:
+    1fr
+    45px
+    1fr
+    45px;
+
+  align-items: center;
+
+  gap: 10px;
+
+  min-height: 30px;
+
+  color: #5d431f;
+
+  font-family:
+    "Noto Serif JP",
+    serif;
+
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.roundNotebookRuleRow strong {
+  color: #8e591c;
+
+  font-family:
+    "Cinzel",
+    serif;
+
+  font-size: 20px;
+}
+
+.finalRoundBonus {
+  margin:
+    7px
+    0
+    0;
+
+  padding-top: 7px;
+
+  border-top:
+    1px solid
+    rgba(116, 77, 31, 0.25);
+
+  color: #9a2e25;
+
+  font-family:
+    "Noto Serif JP",
+    serif;
+
+  font-size: 14px;
+  font-weight: 900;
+
+  letter-spacing: 0.08em;
+}
+
+
+/* ----------------------------------------
+   SCORE TABLE
+---------------------------------------- */
+
+.roundNotebookTable {
+  display: grid;
+
+  grid-template-columns:
+    255px
+    repeat(5, 1fr)
+    115px;
+
+  border-top:
+    2px solid
+    rgba(104, 70, 31, 0.55);
+
+  border-left:
+    2px solid
+    rgba(104, 70, 31, 0.55);
+}
+
+.roundNotebookPlayerRow {
+  display: contents;
+}
+
+.roundNotebookCorner,
+.roundNotebookRoundHeader,
+.roundNotebookTotalHeader,
+.roundNotebookPlayerName,
+.roundNotebookScoreCell,
+.roundNotebookTotalCell {
+  min-height: 76px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-right:
+    2px solid
+    rgba(104, 70, 31, 0.42);
+
+  border-bottom:
+    2px solid
+    rgba(104, 70, 31, 0.42);
+}
+
+
+/* TABLE HEADER */
+
+.roundNotebookCorner,
+.roundNotebookRoundHeader,
+.roundNotebookTotalHeader {
+  min-height: 52px;
+
+  color: #60431e;
+
+  background:
+    rgba(129, 88, 35, 0.1);
+
+  font-family:
+    "Cinzel",
+    serif;
+
+  font-size: 18px;
+  font-weight: 900;
+
+  letter-spacing: 0.08em;
+}
+
+.currentRoundHeader {
+  color: #f9ebbe;
+
+  background:
+    #775220;
+}
+
+.roundNotebookTotalHeader {
+  color: #f8e7b7;
+
+  background:
+    #4f371c;
+}
+
+
+/* PLAYER */
+
+.roundNotebookPlayerName {
+  position: relative;
+
+  justify-content: flex-start;
+
+  gap: 13px;
+
+  padding:
+    6px
+    12px;
+
+  color: #332311;
+
+  font-family:
+    "Noto Serif JP",
+    "Yu Mincho",
+    serif;
+
+  font-size: 19px;
+  font-weight: 900;
+}
+
+.roundNotebookPlayerIllustration {
+  width: 54px;
+  height: 54px;
+
+  flex-shrink: 0;
+
+  object-fit: cover;
+
+  border:
+    2px solid #91692c;
+
+  border-radius: 50%;
+
+  background: #281013;
+}
+
+.roundWinnerMark {
+  margin-left: auto;
+
+  padding:
+    3px
+    7px;
+
+  color: #a12620;
+
+  font-family:
+    "Noto Serif JP",
+    serif;
+
+  font-size: 12px;
+
+  border:
+    1px solid
+    rgba(161, 38, 32, 0.45);
+
+  transform:
+    rotate(-4deg);
+}
+
+
+/* SCORE */
+
+.roundNotebookScoreCell,
+.roundNotebookTotalCell {
+  color: #4b3820;
+
+  font-family:
+    "Cinzel",
+    serif;
+
+  font-size: 27px;
+  font-weight: 900;
+
+  font-variant-numeric:
+    tabular-nums;
+}
+
+.currentRoundScoreCell {
+  background:
+    rgba(203, 159, 69, 0.13);
+}
+
+.positiveScore {
+  color: #a46818;
+}
+
+.negativeScore {
+  color: #8c3030;
+}
+
+.roundNotebookTotalCell {
+  color: #f7e5ae;
+
+  background:
+    rgba(65, 41, 18, 0.9);
+
+  font-size: 30px;
+
+  text-shadow:
+    0 1px 4px
+    rgba(0, 0, 0, 0.25);
+}
+
+
+/* ----------------------------------------
+   今回の順位
+---------------------------------------- */
+
+.presidentRoundRanks {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  gap: 12px;
+
+  margin-top: 25px;
+}
+
+.presidentRoundRank {
+  position: relative;
+
+  display: grid;
+
+  grid-template-columns:
+    auto
+    1fr
+    auto;
+
+  grid-template-areas:
+    "place name score"
+    "place rank score";
+
+  align-items: center;
+
+  column-gap: 10px;
+
+  min-height: 76px;
+
+  padding:
+    10px
+    13px;
+
+  background:
+    rgba(255, 249, 224, 0.42);
+
+  border:
+    1px solid
+    rgba(111, 75, 32, 0.35);
+}
+
+.presidentRoundRank > span {
+  grid-area: place;
+
+  color: #8d611e;
+
+  font-family:
+    "Cinzel",
+    serif;
+
+  font-size: 22px;
+  font-weight: 900;
+}
+
+.presidentRoundRank > strong {
+  grid-area: name;
+
+  font-family:
+    "Noto Serif JP",
+    serif;
+
+  font-size: 17px;
+}
+
+.presidentRoundRank > em {
+  grid-area: rank;
+
+  color: #80591f;
+
+  font-family:
+    "Noto Serif JP",
+    serif;
+
+  font-size: 15px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.presidentRoundRank > b {
+  grid-area: score;
+
+  color: #855516;
+
+  font-family:
+    "Cinzel",
+    serif;
+
+  font-size: 27px;
+}
+
+
+/* ----------------------------------------
+   FOOTER
+---------------------------------------- */
+
+.roundNotebookFooter {
+  display: flex;
+
+  align-items: center;
+  justify-content:
+    space-between;
+
+  margin-top: 30px;
+}
+
+.roundNotebookProgress {
+  display: flex;
+
+  gap: 11px;
+}
+
+.roundNotebookProgress span {
+  width: 13px;
+  height: 13px;
+
+  border:
+    2px solid
+    rgba(104, 70, 31, 0.55);
+
+  border-radius: 50%;
+
+  background:
+    transparent;
+}
+
+.roundNotebookProgress
+  .completedRoundDot {
+  border-color: #825923;
+
+  background: #825923;
+
+  box-shadow:
+    0 0 7px
+    rgba(150, 101, 35, 0.35);
+}
+
+.roundNotebookNextButton {
+  min-width: 210px;
+  height: 58px;
+
+  padding:
+    0
+    25px;
+
+  color: #fff0c4;
+
+  background:
+    linear-gradient(
+      180deg,
+      #71471e,
+      #4b2b13
+    );
+
+  border:
+    2px solid #ae7c34;
+
+  border-radius: 7px;
+
+  font-family:
+    "Noto Serif JP",
+    serif;
+
+  font-size: 18px;
+  font-weight: 900;
+
+  letter-spacing: 0.08em;
+
+  cursor: pointer;
+
+  transition:
+    transform 150ms ease,
+    filter 150ms ease,
+    box-shadow 150ms ease;
+}
+
+.roundNotebookNextButton:hover:not(
+    :disabled
+  ) {
+  transform:
+    translateY(-2px);
+
+  filter:
+    brightness(1.12);
+
+  box-shadow:
+    0 6px 15px
+    rgba(80, 45, 15, 0.28);
+}
+
+.roundNotebookNextButton:active:not(
+    :disabled
+  ) {
+  transform:
+    translateY(0);
+}
+
+.roundNotebookNextButton:disabled {
+  opacity: 0.4;
+
+  cursor: default;
+}
