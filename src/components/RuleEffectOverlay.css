@@ -133,18 +133,29 @@
   transform: scaleX(-1);
 }
 
+/* ========================================
+   通常ルール発動
+   上がりの金色と区別する
+======================================== */
+
+.ruleEffect-revolution
+  .ruleEffectContent p,
+.ruleEffect-shibari
+  .ruleEffectContent p,
 .ruleEffect-eightCut
-.ruleEffectContent p,
+  .ruleEffectContent p,
+.ruleEffect-elevenBack
+  .ruleEffectContent p,
 .ruleEffect-spadeThree
-.ruleEffectContent p {
-  color: #fff0b0;
+  .ruleEffectContent p {
+  color: #8fdcff;
 
   text-shadow:
-    0 3px 0 #711b13,
+    0 3px 0 #102b44,
     0 0 12px
-      rgba(255, 239, 177, 0.95),
+      rgba(125, 215, 255, 0.95),
     0 0 38px
-      rgba(255, 55, 39, 0.9);
+      rgba(32, 125, 255, 0.8);
 }
 
 .ruleEffect-gekiShibari
