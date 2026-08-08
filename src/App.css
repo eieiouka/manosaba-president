@@ -224,7 +224,7 @@ button {
   gap: 8px;
 }
 
-/* 橘シェリー */
+/* 讖倥す繧ｧ繝ｪ繝ｼ */
 
 .playerTop {
   top: 8px;
@@ -247,7 +247,7 @@ button {
   transform: translateX(-50%);
 }
 
-/* 桜羽エマ */
+/* 譯懃ｾｽ繧ｨ繝� */
 .playerLeft {
   top: 310px;
   left: 28px;
@@ -264,7 +264,7 @@ button {
   row-gap: 10px;
 }
 
-/* 遠野ハンナ */
+/* 驕�驥弱ワ繝ｳ繝� */
 .playerRight {
   top: 310px;
   right: 28px;
@@ -451,7 +451,7 @@ button {
   line-height: 1;
 }
 
-/* 相手の裏向き手札 */
+/* 逶ｸ謇九�陬丞髄縺肴焔譛ｭ */
 .opponentHand {
   --opponent-card-width: 72px;
   --opponent-card-height: 108px;
@@ -636,7 +636,7 @@ button {
 
   display: grid;
   grid-template-columns:
-    180px
+    230px
     minmax(0, 1fr)
     auto;
   align-items: end;
@@ -645,7 +645,7 @@ button {
 }
 
 .yourInformation {
-  width: 180px;
+  width: 230px;
   height: 220px;
   padding: 10px 4px;
 
@@ -695,7 +695,7 @@ button {
 .yourRank {
   position: relative;
 
-  width: 160px;
+  width: 195px;
   margin: 5px 0 0;
   padding: 7px 0 10px;
 
@@ -728,7 +728,7 @@ button {
   font-size: 60px;
   font-weight: 800;
   line-height: 68px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.08em;
   white-space: nowrap;
 
   text-shadow:
@@ -763,7 +763,7 @@ button {
 
 .yourRank::before,
 .yourRank::after {
-  width: 22px;
+  width: 14px;
 }
 
 .playerRank::before,
@@ -782,7 +782,7 @@ button {
 .playerHand {
   --hand-step: 0%;
 
-  width: min(1120px, 100%);
+  width: min(1080px, 100%);
   min-width: 0;
   min-height:
     calc(var(--hand-card-width) * 1.5);
@@ -1205,7 +1205,7 @@ button {
 }
 
 /* ==============================
-   選択中の手札
+   驕ｸ謚樔ｸｭ縺ｮ謇区惆
    ============================== */
 
 .playerHand
@@ -1225,8 +1225,8 @@ button {
 }
 
 /*
-  選択中にカーソルを合わせても
-  選択位置から下がらない
+  驕ｸ謚樔ｸｭ縺ｫ繧ｫ繝ｼ繧ｽ繝ｫ繧貞粋繧上○縺ｦ繧�
+  驕ｸ謚樔ｽ咲ｽｮ縺九ｉ荳九′繧峨↑縺�
 */
 .playerHand
   .playingCard.selectedCard:hover {
@@ -1234,8 +1234,8 @@ button {
 }
 
 /* ==============================
-   出せるカード
-   七並べと同じ赤枠
+   蜃ｺ縺帙ｋ繧ｫ繝ｼ繝�
+   荳�ｸｦ縺ｹ縺ｨ蜷後§襍､譫�
    ============================== */
 
 .playerHand .playableCard {
@@ -1259,7 +1259,7 @@ button {
 }
 
 /* ==============================
-   PASSエフェクト
+   PASS繧ｨ繝輔ぉ繧ｯ繝�
    ============================== */
 
 .playerPortraitSlot {
@@ -1364,13 +1364,13 @@ button {
 .roundNotebook {
   position: relative;
 
-  width: 1240px;
+  width: 1360px;
   min-height: 790px;
 
   padding:
-    55px
-    65px
-    42px;
+    48px
+    48px
+    38px;
 
   overflow: hidden;
 
@@ -1428,48 +1428,11 @@ button {
 
 
 /* ----------------------------------------
-   左側の製本風装飾
+   蟾ｦ蛛ｴ縺ｮ陬ｽ譛ｬ鬚ｨ陬�｣ｾ
 ---------------------------------------- */
 
 .roundNotebookBinding {
-  position: absolute;
-
-  top: 0;
-  bottom: 0;
-  left: 24px;
-
-  width: 18px;
-
-  display: flex;
-  flex-direction: column;
-  justify-content:
-    space-evenly;
-
-  border-left:
-    2px solid
-    rgba(102, 64, 25, 0.22);
-
-  border-right:
-    2px solid
-    rgba(102, 64, 25, 0.22);
-}
-
-.roundNotebookBinding span {
-  width: 18px;
-  height: 18px;
-
-  margin-left: -2px;
-
-  border:
-    3px solid #755128;
-
-  border-radius: 50%;
-
-  background: #d7b873;
-
-  box-shadow:
-    inset 0 2px 3px
-      rgba(255, 255, 255, 0.5);
+  display: none;
 }
 
 
@@ -1530,15 +1493,15 @@ button {
 
 
 /* ----------------------------------------
-   配点表示
+   驟咲せ陦ｨ遉ｺ
 ---------------------------------------- */
 
 .roundNotebookRule {
   position: relative;
 
-  min-width: 370px;
+  min-width: 470px;
 
-  padding: 12px 18px;
+  padding: 16px 22px;
 
   border:
     1px solid
@@ -1553,15 +1516,15 @@ button {
 
   grid-template-columns:
     1fr
-    45px
+    60px
     1fr
-    45px;
+    60px;
 
   align-items: center;
 
-  gap: 10px;
+  gap: 13px;
 
-  min-height: 30px;
+  min-height: 40px;
 
   color: #5d431f;
 
@@ -1569,7 +1532,7 @@ button {
     "Noto Serif JP",
     serif;
 
-  font-size: 17px;
+  font-size: 22px;
   font-weight: 700;
 }
 
@@ -1580,16 +1543,16 @@ button {
     "Cinzel",
     serif;
 
-  font-size: 20px;
+  font-size: 27px;
 }
 
 .finalRoundBonus {
   margin:
-    7px
+    10px
     0
     0;
 
-  padding-top: 7px;
+  padding-top: 10px;
 
   border-top:
     1px solid
@@ -1601,7 +1564,7 @@ button {
     "Noto Serif JP",
     serif;
 
-  font-size: 14px;
+  font-size: 18px;
   font-weight: 900;
 
   letter-spacing: 0.08em;
@@ -1616,9 +1579,9 @@ button {
   display: grid;
 
   grid-template-columns:
-    255px
+    325px
     repeat(5, 1fr)
-    115px;
+    145px;
 
   border-top:
     2px solid
@@ -1639,7 +1602,7 @@ button {
 .roundNotebookPlayerName,
 .roundNotebookScoreCell,
 .roundNotebookTotalCell {
-  min-height: 76px;
+  min-height: 86px;
 
   display: flex;
   align-items: center;
@@ -1660,7 +1623,7 @@ button {
 .roundNotebookCorner,
 .roundNotebookRoundHeader,
 .roundNotebookTotalHeader {
-  min-height: 52px;
+  min-height: 58px;
 
   color: #60431e;
 
@@ -1671,7 +1634,7 @@ button {
     "Cinzel",
     serif;
 
-  font-size: 18px;
+  font-size: 21px;
   font-weight: 900;
 
   letter-spacing: 0.08em;
@@ -1685,10 +1648,10 @@ button {
 }
 
 .roundNotebookTotalHeader {
-  color: #f8e7b7;
+  color: #533b1d;
 
   background:
-    #4f371c;
+    rgba(207, 178, 112, 0.42);
 }
 
 
@@ -1699,11 +1662,11 @@ button {
 
   justify-content: flex-start;
 
-  gap: 13px;
+  gap: 16px;
 
   padding:
-    6px
-    12px;
+    7px
+    16px;
 
   color: #332311;
 
@@ -1712,13 +1675,13 @@ button {
     "Yu Mincho",
     serif;
 
-  font-size: 19px;
+  font-size: 22px;
   font-weight: 900;
 }
 
 .roundNotebookPlayerIllustration {
-  width: 54px;
-  height: 54px;
+  width: 62px;
+  height: 62px;
 
   flex-shrink: 0;
 
@@ -1736,20 +1699,26 @@ button {
   margin-left: auto;
 
   padding:
-    3px
-    7px;
+    7px
+    10px;
 
-  color: #a12620;
+  color: #a33a32;
+
+  background:
+    rgba(255, 247, 219, 0.75);
 
   font-family:
     "Noto Serif JP",
+    "Yu Mincho",
     serif;
 
-  font-size: 12px;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
 
   border:
-    1px solid
-    rgba(161, 38, 32, 0.45);
+    2px solid
+    rgba(163, 58, 50, 0.7);
 
   transform:
     rotate(-4deg);
@@ -1766,7 +1735,7 @@ button {
     "Cinzel",
     serif;
 
-  font-size: 27px;
+  font-size: 38px;
   font-weight: 900;
 
   font-variant-numeric:
@@ -1779,20 +1748,21 @@ button {
 }
 
 .positiveScore {
-  color: #a46818;
+  color: #286243;
 }
 
 .negativeScore {
-  color: #8c3030;
+  color: #a33a32;
 }
 
 .roundNotebookTotalCell {
   color: #f7e5ae;
 
   background:
-    rgba(65, 41, 18, 0.9);
+    rgba(207, 178, 112, 0.22);
 
-  font-size: 30px;
+  font-size: 42px;
+  font-weight: 900;
 
   text-shadow:
     0 1px 4px
@@ -1801,7 +1771,7 @@ button {
 
 
 /* ----------------------------------------
-   今回の順位
+   莉雁屓縺ｮ鬆�ｽ�
 ---------------------------------------- */
 
 .presidentRoundRanks {
@@ -1810,9 +1780,9 @@ button {
   grid-template-columns:
     repeat(4, 1fr);
 
-  gap: 12px;
+  gap: 14px;
 
-  margin-top: 25px;
+  margin-top: 27px;
 }
 
 .presidentRoundRank {
@@ -1822,22 +1792,23 @@ button {
 
   grid-template-columns:
     auto
+    50px
     1fr
     auto;
 
   grid-template-areas:
-    "place name score"
-    "place rank score";
+    "place portrait name score"
+    "place portrait rank score";
 
   align-items: center;
 
-  column-gap: 10px;
+  column-gap: 12px;
 
-  min-height: 76px;
+  min-height: 88px;
 
   padding:
-    10px
-    13px;
+    12px
+    16px;
 
   background:
     rgba(255, 249, 224, 0.42);
@@ -1856,7 +1827,7 @@ button {
     "Cinzel",
     serif;
 
-  font-size: 22px;
+  font-size: 25px;
   font-weight: 900;
 }
 
@@ -1867,7 +1838,7 @@ button {
     "Noto Serif JP",
     serif;
 
-  font-size: 17px;
+  font-size: 19px;
 }
 
 .presidentRoundRank > em {
@@ -1879,7 +1850,7 @@ button {
     "Noto Serif JP",
     serif;
 
-  font-size: 15px;
+  font-size: 17px;
   font-style: normal;
   font-weight: 900;
 }
@@ -1893,7 +1864,7 @@ button {
     "Cinzel",
     serif;
 
-  font-size: 27px;
+  font-size: 32px;
 }
 
 
@@ -2008,271 +1979,16 @@ button {
   cursor: default;
 }
 
-/* ========================================
-   PRESIDENT NOTEBOOK 最終レイアウト調整
-======================================== */
-
 /*
-  左側の留め具を完全に消す
+  TOTAL蛻�
+
+  謨ｰ蟄暦ｼ�
+  �� = 邱�
+  �� = 襍､
+
+  閭梧勹��
+  阮�＞驥醍ｴ呵牡
 */
-.roundNotebookBinding {
-  display: none;
-}
-
-
-/*
-  ノート全体を広く使う
-*/
-.roundNotebook {
-  width: 1360px;
-
-  padding:
-    48px
-    48px
-    38px;
-}
-
-
-/*
-  PLAYER列を大きくして、
-  5回戦＋TOTALも広く使う
-*/
-.roundNotebookTable {
-  grid-template-columns:
-    325px
-    repeat(5, 1fr)
-    145px;
-}
-
-
-/*
-  表の1行を少し大きく
-*/
-.roundNotebookCorner,
-.roundNotebookRoundHeader,
-.roundNotebookTotalHeader,
-.roundNotebookPlayerName,
-.roundNotebookScoreCell,
-.roundNotebookTotalCell {
-  min-height: 86px;
-}
-
-
-/*
-  見出し行
-*/
-.roundNotebookCorner,
-.roundNotebookRoundHeader,
-.roundNotebookTotalHeader {
-  min-height: 58px;
-
-  font-size: 21px;
-}
-
-
-/*
-  PLAYER文字
-*/
-.roundNotebookPlayerName {
-  gap: 16px;
-
-  padding:
-    7px
-    16px;
-
-  font-size: 22px;
-}
-
-
-/*
-  キャラアイコンも少し拡大
-*/
-.roundNotebookPlayerIllustration {
-  width: 62px;
-  height: 62px;
-}
-
-
-/*
-  大富豪のハンコを大きく
-*/
-.roundWinnerMark {
-  margin-left: auto;
-
-  padding:
-    7px
-    10px;
-
-  color: #a33a32;
-
-  background:
-    rgba(255, 247, 219, 0.75);
-
-  border:
-    2px solid
-    rgba(163, 58, 50, 0.7);
-
-  font-family:
-    "Noto Serif JP",
-    "Yu Mincho",
-    serif;
-
-  font-size: 18px;
-  font-weight: 900;
-
-  letter-spacing: 0.08em;
-
-  transform:
-    rotate(-4deg);
-}
-
-
-/*
-  各回戦の点数を大きく
-*/
-.roundNotebookScoreCell {
-  font-size: 38px;
-  font-weight: 900;
-}
-
-
-/*
-  七並べと同じ
-  プラス＝緑
-  マイナス＝赤
-*/
-.positiveScore {
-  color: #286243;
-}
-
-.negativeScore {
-  color: #a33a32;
-}
-
-
-/*
-  TOTALをさらに大きく
-*/
-.roundNotebookTotalCell {
-  font-size: 42px;
-  font-weight: 900;
-
-  /*
-    「次の回戦へ」の茶色いボタンと
-    被らない色に変更
-  */
-  background:
-    rgba(93, 105, 91, 0.2);
-}
-
-
-/*
-  TOTAL見出しもボタンとは
-  別系統の色へ
-*/
-.roundNotebookTotalHeader {
-  color: #fff8df;
-
-  background:
-    #596452;
-}
-
-
-/* ========================================
-   右上の配点
-======================================== */
-
-.roundNotebookRule {
-  min-width: 470px;
-
-  padding:
-    16px
-    22px;
-}
-
-.roundNotebookRuleRow {
-  grid-template-columns:
-    1fr
-    60px
-    1fr
-    60px;
-
-  min-height: 40px;
-
-  gap: 13px;
-
-  font-size: 22px;
-}
-
-.roundNotebookRuleRow strong {
-  font-size: 27px;
-}
-
-
-/*
-  最終戦ボーナス表示
-*/
-.finalRoundBonus {
-  margin-top: 10px;
-
-  padding-top: 10px;
-
-  font-size: 18px;
-}
-
-
-/* ========================================
-   下側の今回順位
-======================================== */
-
-.presidentRoundRanks {
-  gap: 14px;
-
-  margin-top: 27px;
-}
-
-.presidentRoundRank {
-  min-height: 88px;
-
-  padding:
-    12px
-    16px;
-}
-
-.presidentRoundRank > span {
-  font-size: 25px;
-}
-
-.presidentRoundRank > strong {
-  font-size: 19px;
-}
-
-.presidentRoundRank > em {
-  font-size: 17px;
-}
-
-.presidentRoundRank > b {
-  font-size: 32px;
-}
-
-/*
-  TOTAL列
-
-  数字：
-  ＋ = 緑
-  － = 赤
-
-  背景：
-  薄い金紙色
-*/
-.roundNotebookTotalCell {
-  background:
-    rgba(207, 178, 112, 0.22);
-
-  font-size: 42px;
-  font-weight: 900;
-}
-
 .roundNotebookTotalCell.positiveScore {
   color: #286243;
 }
@@ -2283,37 +1999,12 @@ button {
 
 
 /*
-  TOTAL見出し
+  TOTAL隕句�縺�
 */
-.roundNotebookTotalHeader {
-  color: #533b1d;
-
-  background:
-    rgba(207, 178, 112, 0.42);
-}
-
 /*
-  今回順位一覧
-  1位 → 4位の順
+  莉雁屓鬆�ｽ堺ｸ隕ｧ
+  1菴� 竊� 4菴阪�鬆�
 */
-
-.presidentRoundRank {
-  grid-template-columns:
-    auto
-    50px
-    1fr
-    auto;
-
-  grid-template-areas:
-    "place portrait name score"
-    "place portrait rank score";
-
-  column-gap: 12px;
-}
-
-.presidentRankPlace {
-  grid-area: place;
-}
 
 .presidentRankPortrait {
   grid-area: portrait;
@@ -2336,86 +2027,7 @@ button {
     rgba(64, 37, 15, 0.2);
 }
 
-.presidentRoundRank > strong {
-  grid-area: name;
-}
-
-.presidentRoundRank > em {
-  grid-area: rank;
-}
-
-.presidentRoundRank > b {
-  grid-area: score;
-}
-
-/* ========================================
-   自分パネル横幅調整
-======================================== */
-
-/*
-  左下の自分パネルを
-  180px → 220pxへ拡張。
-
-  全体幅は変えないので、
-  その40px分だけ手札エリアが狭くなる。
-*/
-.yourArea {
-  grid-template-columns:
-    230px
-    minmax(0, 1fr)
-    auto;
-}
-
-
-/*
-  実際の自分パネルも
-  同じ220pxへ。
-*/
-.yourInformation {
-  width: 230px;
-}
-
-
-/*
-  階級表示も広げる。
-
-  大富豪・大貧民でも
-  はみ出さない。
-*/
-.yourRank {
-  width: 195px;
-
-  font-size: 60px;
-
-  letter-spacing: 0.08em;
-}
-
-
-/*
-  左右の装飾線も
-  新しい幅に合わせて少し短く。
-*/
-.yourRank::before,
-.yourRank::after {
-  width: 14px;
-}
-
-
-/*
-  手札の最大横幅を
-  1120 → 1080pxへ。
-
-  カード自体のサイズは変更しない。
-  カード同士の重なりだけ増える。
-*/
-.playerHand {
-  width: min(
-    1080px,
-    100%
-  );
-}
-
-/* 0点 */
+/* 0轤ｹ */
 .zeroScore {
   color: #332311;
 }
@@ -2443,7 +2055,7 @@ button {
 
 
 /* ========================================
-   メインパネル
+   繝｡繧､繝ｳ繝代ロ繝ｫ
 ======================================== */
 
 .finalResultPanel {
@@ -2685,7 +2297,7 @@ button {
 
 
 /* ========================================
-   最終順位
+   譛邨る��ｽ�
 ======================================== */
 
 .finalRanking {
@@ -2720,7 +2332,7 @@ button {
 
 
 /*
-  総合1位だけ金色
+  邱丞粋1菴阪□縺鷹≡濶ｲ
 */
 .finalRankingRow.finalRank1 {
   border-color:
@@ -2740,7 +2352,7 @@ button {
 }
 
 
-/* 順位 */
+/* 鬆�ｽ� */
 
 .finalRankingPosition {
   display: flex;
@@ -2767,7 +2379,7 @@ button {
 }
 
 
-/* プレイヤー */
+/* 繝励Ξ繧､繝､繝ｼ */
 
 .finalRankingPlayer {
   display: flex;
@@ -2821,7 +2433,7 @@ button {
 }
 
 
-/* 合計点 */
+/* 蜷郁ｨ育せ */
 
 .finalRankingScore {
   text-align: right;
@@ -2853,7 +2465,7 @@ button {
 
 
 /* ========================================
-   七並べと共通の得点配色
+   荳�ｸｦ縺ｹ縺ｨ蜈ｱ騾壹�蠕礼せ驟崎牡
 ======================================== */
 
 .finalResultPanel
@@ -2873,7 +2485,7 @@ button {
 
 
 /* ========================================
-   5回戦 対局記録
+   5蝗樊姶 蟇ｾ螻險倬鹸
 ======================================== */
 
 .finalRoundHistory {
@@ -2942,7 +2554,7 @@ button {
 }
 
 
-/* 見出し */
+/* 隕句�縺� */
 
 .finalHistoryCorner,
 .finalHistoryRoundHeader,
@@ -2970,7 +2582,7 @@ button {
 }
 
 
-/* 名前 */
+/* 蜷榊燕 */
 
 .finalHistoryPlayerName {
   justify-content: flex-start;
@@ -3006,7 +2618,7 @@ button {
 }
 
 
-/* 各回戦得点 */
+/* 蜷�屓謌ｦ蠕礼せ */
 
 .finalHistoryScore,
 .finalHistoryTotal {
@@ -3110,7 +2722,7 @@ button {
 }
 
 
-/* もう一度遊ぶ */
+/* 繧ゅ≧荳蠎ｦ驕翫� */
 
 .finalResultRestartButton {
   color: #261509;
@@ -3131,53 +2743,8 @@ button {
 }
 
 /* ========================================
-   上がり後の階級文字
-======================================== */
-
-.opponentFinishedRank span,
-.playerFinishedRank span {
-  display: block;
-
-  color: #f3d67f;
-
-  font-family:
-    "Zen Old Mincho",
-    "Noto Serif JP",
-    "Yu Mincho",
-    serif;
-
-  font-weight: 900;
-
-  line-height: 1;
-
-  letter-spacing: 0.12em;
-
-  white-space: nowrap;
-
-  text-shadow:
-    0 2px 3px
-      rgba(0, 0, 0, 0.95),
-    0 0 10px
-      rgba(255, 218, 115, 0.6),
-    0 0 22px
-      rgba(211, 153, 44, 0.35);
-}
-
-
-/* CPU側 */
-.opponentFinishedRank span {
-  font-size: 58px;
-}
-
-
-/* ナノカ側 */
-.playerFinishedRank span {
-  font-size: 76px;
-}
-
-/* ========================================
-   上がり後の手札欄
-   七並べの結果表示と同じ考え方
+   荳翫′繧雁ｾ後�謇区惆谺�
+   荳�ｸｦ縺ｹ縺ｮ邨先棡陦ｨ遉ｺ縺ｨ蜷後§閠�∴譁ｹ
 ======================================== */
 
 .opponentFinishedRank,
@@ -3218,8 +2785,8 @@ button {
 
 
 /*
-  内側にもう1本、
-  薄い金色の飾り枠
+  蜀��縺ｫ繧ゅ≧1譛ｬ縲�
+  阮�＞驥題牡縺ｮ鬟ｾ繧頑棧
 */
 .opponentFinishedRank::before,
 .playerFinishedRank::before {
@@ -3255,6 +2822,10 @@ button {
   position: relative;
   z-index: 1;
 
+  display: block;
+
+  color: #f3d67f;
+
   font-family:
     "Zen Old Mincho",
     "Noto Serif JP",
@@ -3278,15 +2849,15 @@ button {
 
 
 /* ========================================
-   ナノカ
+   繝翫ヮ繧ｫ
 ======================================== */
 
 .playerFinishedRank {
   width: 100%;
 
   /*
-    元々手札が使っていた高さを
-    そのまま確保
+    蜈��焔譛ｭ縺御ｽｿ縺｣縺ｦ縺�◆鬮倥＆繧�
+    縺昴�縺ｾ縺ｾ遒ｺ菫�
   */
   height:
     calc(
@@ -3300,6 +2871,10 @@ button {
 .playerFinishedRank span {
   position: relative;
   z-index: 1;
+
+  display: block;
+
+  color: #f3d67f;
 
   font-family:
     "Zen Old Mincho",
