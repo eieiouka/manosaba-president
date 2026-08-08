@@ -8,6 +8,11 @@ const EFFECT_TEXT = {
   eightCut: "8切り",
   spadeThree: "スペ3返し",
   forbiddenFinish: "禁止上がり",
+
+  finishDaifugo: "大富豪",
+  finishFugo: "富豪",
+  finishHinmin: "貧民",
+  finishDaipinmin: "大貧民",
 };
 
 function RuleEffectOverlay({

@@ -85,8 +85,10 @@ function calculateGameScale() {
 }
 
 function App() {
-  const [debugMode, setDebugMode] =
-    useState(false);
+  const [
+    debugMode,
+    setDebugMode,
+  ] = useState(false);
 
   const [
     showFinalResult,
@@ -103,6 +105,11 @@ function App() {
     setSavedRounds,
   ] = useState([]);
 
+  /*
+    現在のゲーム開始時点での階級。
+
+    1回戦目は全員平民。
+  */
   const [
     playerRanks,
     setPlayerRanks,
@@ -132,9 +139,13 @@ function App() {
     playedCards,
 
     activeRuleEffect,
+    isRuleEffectPlaying,
+
     passEffectPlayerIndexes,
 
     finishOrder,
+    normalFinishOrder,
+    forbiddenFinishPlayerIndex,
     isRoundFinished,
 
     toggleCardSelection,
@@ -149,28 +160,112 @@ function App() {
   } = useCardAnimation();
 
   /*
-    CPUの表示データ。
+    =====================================
+    今回のゲームで確定した階級
+    =====================================
+
+    正常上がり：
+    1人目 → 大富豪
+    2人目 → 富豪
+    3人目 → 貧民
+
+    禁止上がり：
+    → 大貧民
+
+    最後まで残った一人：
+    → 大貧民
+  */
+  const getFinishedRank = (
+    playerIndex,
+  ) => {
+    /*
+      Joker禁止上がり。
+    */
+    if (
+      forbiddenFinishPlayerIndex ===
+      playerIndex
+    ) {
+      return "大貧民";
+    }
+
+    /*
+      正常に上がった人。
+    */
+    const normalPlace =
+      normalFinishOrder.indexOf(
+        playerIndex,
+      );
+
+    if (normalPlace !== -1) {
+      return (
+        RANKS_BY_PLACE[
+          normalPlace
+        ] ?? null
+      );
+    }
+
+    /*
+      ゲーム終了時。
+
+      最後まで残った人も
+      finishOrderから階級を取得。
+    */
+    if (isRoundFinished) {
+      const finalPlace =
+        finishOrder.indexOf(
+          playerIndex,
+        );
+
+      if (finalPlace !== -1) {
+        return (
+          RANKS_BY_PLACE[
+            finalPlace
+          ] ?? null
+        );
+      }
+    }
+
+    return null;
+  };
+
+  /*
+    ナノカの今回確定階級。
+  */
+  const yourFinishedRank =
+    getFinishedRank(0);
+
+  /*
+    CPU表示データ。
 
     hands[0] = ナノカ
     hands[1] = エマ
     hands[2] = シェリー
     hands[3] = ハンナ
-
-    CPUには枚数だけでなく、
-    実際の手札も渡す。
   */
   const displayedOpponents =
     opponents.map(
-      (player, index) => {
-        const cpuHand =
-          hands[index + 1];
+      (
+        player,
+        index,
+      ) => {
+        const playerIndex =
+          index + 1;
 
-                return {
+        const cpuHand =
+          hands[
+            playerIndex
+          ];
+
+        return {
           ...player,
 
+          /*
+            前回ゲームで決まった
+            現在階級。
+          */
           rank:
             playerRanks[
-              index + 1
+              playerIndex
             ],
 
           cardCount:
@@ -178,6 +273,15 @@ function App() {
 
           hand:
             cpuHand,
+
+          /*
+            今回すでに
+            上がっている場合の階級。
+          */
+          finishedRank:
+            getFinishedRank(
+              playerIndex,
+            ),
         };
       },
     );
@@ -192,7 +296,8 @@ function App() {
     }
 
     if (
-      selectedCards.length === 0
+      selectedCards.length ===
+      0
     ) {
       return;
     }
@@ -226,7 +331,12 @@ function App() {
     );
   };
 
-    const saveCurrentRound = () => {
+  /*
+    =====================================
+    戦績保存
+    =====================================
+  */
+  const saveCurrentRound = () => {
     setSavedRounds(
       (current) => {
         const alreadySaved =
@@ -244,6 +354,7 @@ function App() {
           ...current,
           {
             roundNumber,
+
             finishOrder: [
               ...finishOrder,
             ],
@@ -253,15 +364,20 @@ function App() {
     );
   };
 
+  /*
+    =====================================
+    次のゲームへ
+    =====================================
+  */
   const handleNextRound = () => {
     /*
-      今回の結果を保存
+      今回の戦績を保存。
     */
     saveCurrentRound();
 
     /*
       今回の順位を
-      次回の階級にする
+      次回ゲームの階級へ反映。
     */
     setPlayerRanks(
       createRanksFromFinishOrder(
@@ -270,12 +386,12 @@ function App() {
     );
 
     /*
-      新しいカードを配る
+      新しく53枚を配る。
     */
     startNextRound();
 
     /*
-      ROUNDを進める
+      ROUNDを進める。
     */
     setRoundNumber(
       (current) =>
@@ -286,10 +402,17 @@ function App() {
     );
   };
 
+  /*
+    =====================================
+    5回戦終了
+    =====================================
+  */
   const handleFinishMatch = () => {
     saveCurrentRound();
 
-    setShowFinalResult(true);
+    setShowFinalResult(
+      true,
+    );
   };
 
   return (
@@ -347,9 +470,18 @@ function App() {
           </header>
 
           <section className="gameTable">
+            {/*
+              革命・8切り・上がり等
+            */}
             <RuleEffectOverlay
-              effect={activeRuleEffect}
+              effect={
+                activeRuleEffect
+              }
             />
+
+            {/*
+              DEBUG
+            */}
             <button
               type="button"
               onClick={() => {
@@ -362,13 +494,20 @@ function App() {
                 position:
                   "absolute",
 
-                top: "20px",
-                left: "20px",
+                top:
+                  "20px",
 
-                zIndex: 100,
+                left:
+                  "20px",
 
-                width: "120px",
-                height: "42px",
+                zIndex:
+                  100,
+
+                width:
+                  "120px",
+
+                height:
+                  "42px",
 
                 border:
                   debugMode
@@ -407,24 +546,37 @@ function App() {
                 : "OFF"}
             </button>
 
+            {/*
+              ROUND
+            */}
             <div className="roundDisplay">
               <span>
                 ROUND
               </span>
 
               <strong>
-                {roundNumber} / {TOTAL_ROUNDS}
+                {roundNumber} /{" "}
+                {TOTAL_ROUNDS}
               </strong>
             </div>
 
+            {/*
+              CPU3人
+            */}
             {displayedOpponents.map(
-              (player, index) => (
+              (
+                player,
+                index,
+              ) => (
                 <PlayerPanel
                   player={
                     player
                   }
                   debugMode={
                     debugMode
+                  }
+                  finishedRank={
+                    player.finishedRank
                   }
                   isPassing={
                     passEffectPlayerIndexes.includes(
@@ -438,12 +590,18 @@ function App() {
               ),
             )}
 
+            {/*
+              場
+            */}
             <FieldArea
               playedCards={
                 playedCards
               }
             />
 
+            {/*
+              ナノカ
+            */}
             <section className="yourArea">
               <div className="yourInformation">
                 <div className="yourPortraitSlot">
@@ -454,7 +612,9 @@ function App() {
                     draggable="false"
                   />
 
-                  {passEffectPlayerIndexes.includes(0) && (
+                  {passEffectPlayerIndexes.includes(
+                    0,
+                  ) && (
                     <div className="passAvatarEffect">
                       PASS
                     </div>
@@ -467,53 +627,74 @@ function App() {
                   </p>
 
                   <p className="yourRank">
-                    {playerRanks[0]}
+                    {
+                      playerRanks[
+                        0
+                      ]
+                    }
                   </p>
                 </div>
               </div>
 
-              <div
-                className="playerHand"
-                data-count={
-                  hand.length
-                }
-              >
-                <div className="playerHandTrack">
-                  {hand.map(
-                    (
-                      card,
-                      index,
-                    ) => (
-                      <PlayingCard
-                        card={
-                          card
-                        }
-                        index={
-                          index
-                        }
-                        selected={
-                          selectedCardIds.includes(
-                            card.id,
-                          )
-                        }
-                        playable={
-                          playableCardIds.includes(
-                            card.id,
-                          )
-                        }
-                        onToggle={
-                          handleToggleCard
-                        }
-                        key={
-                          card.id
-                        }
-                      />
-                    ),
-                  )}
-                </div>
-              </div>
+              {/*
+                ナノカがまだ上がっていない
+                → 普通の手札。
 
-                            <TurnControls
+                上がった
+                → 手札の代わりに階級。
+              */}
+              {yourFinishedRank ? (
+                <div className="playerFinishedRank">
+                  <span>
+                    {
+                      yourFinishedRank
+                    }
+                  </span>
+                </div>
+              ) : (
+                <div
+                  className="playerHand"
+                  data-count={
+                    hand.length
+                  }
+                >
+                  <div className="playerHandTrack">
+                    {hand.map(
+                      (
+                        card,
+                        index,
+                      ) => (
+                        <PlayingCard
+                          card={
+                            card
+                          }
+                          index={
+                            index
+                          }
+                          selected={
+                            selectedCardIds.includes(
+                              card.id,
+                            )
+                          }
+                          playable={
+                            playableCardIds.includes(
+                              card.id,
+                            )
+                          }
+                          onToggle={
+                            handleToggleCard
+                          }
+                          key={
+                            card.id
+                          }
+                        />
+                      ),
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <TurnControls
                 canPlay={
                   canPlaySelectedCards &&
                   !isAnimating
@@ -527,7 +708,15 @@ function App() {
               />
             </section>
 
+            {/*
+              全順位確定後。
+
+              上がりエフェクトが
+              全部終了するまでは
+              戦績表を表示しない。
+            */}
             {isRoundFinished &&
+              !isRuleEffectPlaying &&
               !showFinalResult && (
                 <RoundScoreNotebook
                   roundNumber={
@@ -548,26 +737,30 @@ function App() {
                 />
               )}
 
-              {showFinalResult && (
-                <FinalMatchResult
-                  savedRounds={
-                    savedRounds
-                  }
-                  roundNumber={
-                    roundNumber
-                  }
-                  finishOrder={
-                    finishOrder
-                  }
-                  onRestart={() => {
-                    window.location.reload();
-                  }}
-                  onBackToHub={() => {
-                    window.location.href =
-                      "https://manosaba-cardgame-hub.vercel.app/";
-                  }}
-                />
-              )}
+            {/*
+              5回戦終了後の
+              最終結果。
+            */}
+            {showFinalResult && (
+              <FinalMatchResult
+                savedRounds={
+                  savedRounds
+                }
+                roundNumber={
+                  roundNumber
+                }
+                finishOrder={
+                  finishOrder
+                }
+                onRestart={() => {
+                  window.location.reload();
+                }}
+                onBackToHub={() => {
+                  window.location.href =
+                    "https://manosaba-cardgame-hub.vercel.app/";
+                }}
+              />
+            )}
           </section>
         </div>
       </div>

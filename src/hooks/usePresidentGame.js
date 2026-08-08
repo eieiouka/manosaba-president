@@ -595,29 +595,70 @@ export default function usePresidentGame() {
     cards,
     nextHands,
   }) {
+    /*
+      まだカードを持っているので
+      上がりではない。
+    */
     if (
       nextHands[playerIndex]
         .length !== 0
     ) {
-      return false;
+      return {
+        forbiddenFinish: false,
+        finishEvent: null,
+      };
     }
 
+    /*
+      Jokerを含んだ上がりは
+      禁止上がりなので大貧民。
+    */
     if (containsJoker(cards)) {
       setForbiddenFinishPlayerIndex(
         playerIndex,
       );
 
-      return true;
+      return {
+        forbiddenFinish: true,
+        finishEvent:
+          "finishDaipinmin",
+      };
     }
+
+    /*
+      正常に上がった順番。
+
+      0人上がり済み → 大富豪
+      1人上がり済み → 富豪
+      2人上がり済み → 貧民
+    */
+    const finishEvents = [
+      "finishDaifugo",
+      "finishFugo",
+      "finishHinmin",
+    ];
+
+    const finishEvent =
+      finishEvents[
+        normalFinishOrder.length
+      ] ?? null;
 
     setNormalFinishOrder(
       (current) =>
-        current.includes(playerIndex)
+        current.includes(
+          playerIndex,
+        )
           ? current
-          : [...current, playerIndex],
+          : [
+              ...current,
+              playerIndex,
+            ],
     );
 
-    return false;
+    return {
+      forbiddenFinish: false,
+      finishEvent,
+    };
   }
 
   /*
@@ -630,6 +671,7 @@ export default function usePresidentGame() {
     playerIndex,
     nextHands,
     forbiddenFinish,
+    finishEvent,
   }) {
     const effects =
       getPlayEffects(
@@ -647,8 +689,13 @@ export default function usePresidentGame() {
     if (spadeThreeReturn) {
       triggerRuleEvents([
         "spadeThree",
+
         ...(forbiddenFinish
           ? ["forbiddenFinish"]
+          : []),
+
+        ...(finishEvent
+          ? [finishEvent]
           : []),
       ]);
 
@@ -686,6 +733,12 @@ export default function usePresidentGame() {
       if (forbiddenFinish) {
         events.push(
           "forbiddenFinish",
+        );
+      }
+
+      if (finishEvent) {
+        events.push(
+          finishEvent,
         );
       }
 
@@ -791,7 +844,15 @@ export default function usePresidentGame() {
     }
 
     if (forbiddenFinish) {
-      events.push("forbiddenFinish");
+      events.push(
+        "forbiddenFinish",
+      );
+    }
+
+    if (finishEvent) {
+      events.push(
+        finishEvent,
+      );
     }
 
     triggerRuleEvents(events);
@@ -841,12 +902,14 @@ export default function usePresidentGame() {
 
     setHands(nextHands);
 
-    const forbiddenFinish =
-      registerFinish({
-        playerIndex,
-        cards: play.cards,
-        nextHands,
-      });
+    const {
+      forbiddenFinish,
+      finishEvent,
+    } = registerFinish({
+      playerIndex,
+      cards: play.cards,
+      nextHands,
+    });
 
     applyPlayRules({
       cards: play.cards,
@@ -854,6 +917,7 @@ export default function usePresidentGame() {
       playerIndex,
       nextHands,
       forbiddenFinish,
+      finishEvent,
     });
   }
 

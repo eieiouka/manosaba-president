@@ -4,6 +4,7 @@ function PlayerPanel({
   player,
   debugMode,
   isPassing,
+  finishedRank,
 }) {
   return (
     <section
@@ -36,10 +37,18 @@ function PlayerPanel({
         </div>
       </div>
 
-      <OpponentHand
-        cards={player.hand}
-        debugMode={debugMode}
-      />
+      {finishedRank ? (
+        <div className="opponentFinishedRank">
+          <span>
+            {finishedRank}
+          </span>
+        </div>
+      ) : (
+        <OpponentHand
+          cards={player.hand}
+          debugMode={debugMode}
+        />
+      )}
     </section>
   );
 }

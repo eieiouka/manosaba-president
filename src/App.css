@@ -3129,3 +3129,48 @@ button {
     0 4px 13px
     rgba(211, 166, 70, 0.2);
 }
+
+/* ========================================
+   上がり後の階級文字
+======================================== */
+
+.opponentFinishedRank span,
+.playerFinishedRank span {
+  display: block;
+
+  color: #f3d67f;
+
+  font-family:
+    "Zen Old Mincho",
+    "Noto Serif JP",
+    "Yu Mincho",
+    serif;
+
+  font-weight: 900;
+
+  line-height: 1;
+
+  letter-spacing: 0.12em;
+
+  white-space: nowrap;
+
+  text-shadow:
+    0 2px 3px
+      rgba(0, 0, 0, 0.95),
+    0 0 10px
+      rgba(255, 218, 115, 0.6),
+    0 0 22px
+      rgba(211, 153, 44, 0.35);
+}
+
+
+/* CPU側 */
+.opponentFinishedRank span {
+  font-size: 58px;
+}
+
+
+/* ナノカ側 */
+.playerFinishedRank span {
+  font-size: 76px;
+}
