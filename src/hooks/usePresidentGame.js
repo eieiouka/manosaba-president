@@ -688,14 +688,14 @@ export default function usePresidentGame() {
     */
     if (spadeThreeReturn) {
       triggerRuleEvents([
+        ...(finishEvent
+          ? [finishEvent]
+          : []),
+
         "spadeThree",
 
         ...(forbiddenFinish
           ? ["forbiddenFinish"]
-          : []),
-
-        ...(finishEvent
-          ? [finishEvent]
           : []),
       ]);
 
@@ -708,6 +708,16 @@ export default function usePresidentGame() {
     }
 
     const events = [];
+
+    /*
+      上がり階級は
+      すべての特殊ルールより先に表示。
+    */
+    if (finishEvent) {
+      events.push(
+        finishEvent,
+      );
+    }
 
     /*
       革命は場が流れても残る。
@@ -729,18 +739,6 @@ export default function usePresidentGame() {
     */
     if (effects.eightCut) {
       events.push("eightCut");
-
-      if (forbiddenFinish) {
-        events.push(
-          "forbiddenFinish",
-        );
-      }
-
-      if (finishEvent) {
-        events.push(
-          finishEvent,
-        );
-      }
 
       triggerRuleEvents(events);
 
@@ -846,12 +844,6 @@ export default function usePresidentGame() {
     if (forbiddenFinish) {
       events.push(
         "forbiddenFinish",
-      );
-    }
-
-    if (finishEvent) {
-      events.push(
-        finishEvent,
       );
     }
 

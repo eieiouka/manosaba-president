@@ -3174,3 +3174,152 @@ button {
 .playerFinishedRank span {
   font-size: 76px;
 }
+
+/* ========================================
+   上がり後の手札欄
+   七並べの結果表示と同じ考え方
+======================================== */
+
+.opponentFinishedRank,
+.playerFinishedRank {
+  position: relative;
+
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  color: #f3d67f;
+
+  border:
+    3px solid
+    rgba(224, 186, 91, 0.78);
+
+  border-radius: 18px;
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(99, 39, 44, 0.96) 0%,
+      rgba(31, 9, 15, 0.97) 75%
+    );
+
+  box-shadow:
+    inset 0 0 30px
+      rgba(236, 188, 75, 0.14),
+    0 0 18px
+      rgba(0, 0, 0, 0.38);
+
+  pointer-events: none;
+}
+
+
+/*
+  内側にもう1本、
+  薄い金色の飾り枠
+*/
+.opponentFinishedRank::before,
+.playerFinishedRank::before {
+  position: absolute;
+
+  inset: 8px;
+
+  border:
+    1px solid
+    rgba(232, 198, 112, 0.25);
+
+  border-radius: 12px;
+
+  content: "";
+}
+
+
+/* ========================================
+   CPU
+======================================== */
+
+.opponentFinishedRank {
+  grid-area: hand;
+
+  width: 390px;
+  height: 108px;
+
+  align-self: end;
+  justify-self: center;
+}
+
+.opponentFinishedRank span {
+  position: relative;
+  z-index: 1;
+
+  font-family:
+    "Zen Old Mincho",
+    "Noto Serif JP",
+    "Yu Mincho",
+    serif;
+
+  font-size: 52px;
+  font-weight: 900;
+  line-height: 1;
+
+  letter-spacing: 0.14em;
+
+  white-space: nowrap;
+
+  text-shadow:
+    0 2px 3px
+      rgba(0, 0, 0, 0.95),
+    0 0 12px
+      rgba(255, 215, 105, 0.55);
+}
+
+
+/* ========================================
+   ナノカ
+======================================== */
+
+.playerFinishedRank {
+  width: 100%;
+
+  /*
+    元々手札が使っていた高さを
+    そのまま確保
+  */
+  height:
+    calc(
+      var(--hand-card-width) *
+      1.5
+    );
+
+  min-width: 0;
+}
+
+.playerFinishedRank span {
+  position: relative;
+  z-index: 1;
+
+  font-family:
+    "Zen Old Mincho",
+    "Noto Serif JP",
+    "Yu Mincho",
+    serif;
+
+  font-size: 76px;
+  font-weight: 900;
+  line-height: 1;
+
+  letter-spacing: 0.15em;
+
+  white-space: nowrap;
+
+  text-shadow:
+    0 2px 3px
+      rgba(0, 0, 0, 0.95),
+    0 0 15px
+      rgba(255, 215, 105, 0.6),
+    0 0 25px
+      rgba(211, 153, 44, 0.3);
+}
