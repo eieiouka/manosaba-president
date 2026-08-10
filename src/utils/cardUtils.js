@@ -51,7 +51,7 @@ export function getCardImagePath(
   rank,
 ) {
   if (suitId === "joker") {
-    return "/cards/card_JOKER.png";
+    return "/cards_webp/card_JOKER.webp";
   }
 
   const suit = suits.find(
@@ -62,9 +62,9 @@ export function getCardImagePath(
     return "";
   }
 
-  return `/cards/card_${getRankFileName(
+  return `/cards_webp/card_${getRankFileName(
     rank,
-  )}${suit.fileNumber}.png`;
+  )}${suit.fileNumber}.webp`;
 }
 
 export function getCardLabel(card) {

@@ -36,14 +36,12 @@ function OpponentHand({
                     card.suit,
                     card.rank,
                   )
-                : "/cards/card_back.png";
+                : "/cards_webp/card_back.webp";
 
             return (
               <div
                 className="opponentCard"
-                key={
-                  card.id
-                }
+                key={card.id}
                 style={{
                   "--opponent-index":
                     index,
@@ -53,9 +51,7 @@ function OpponentHand({
                 }}
               >
                 <img
-                  src={
-                    imageSource
-                  }
+                  src={imageSource}
                   alt={
                     debugMode
                       ? card.id
