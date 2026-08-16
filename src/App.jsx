@@ -16,6 +16,7 @@ import RoundScoreNotebook from "./components/RoundScoreNotebook";
 import FinalMatchResult from "./components/FinalMatchResult";
 
 import useCardAnimation from "./hooks/useCardAnimation";
+import useCardExchangeAnimation from "./hooks/useCardExchangeAnimation";
 import useGameScale from "./hooks/useGameScale";
 import usePresidentGame from "./hooks/usePresidentGame";
 
@@ -152,6 +153,11 @@ function App() {
   } = useCardAnimation();
 
   const {
+    isExchangeAnimating,
+    animateCardExchange,
+  } = useCardExchangeAnimation();
+
+  const {
     hands,
     hand,
 
@@ -234,6 +240,7 @@ function App() {
 
   const canConfirmExchange =
     isExchangePhase &&
+    !isExchangeAnimating &&
     isValidExchangeSelection({
       hand,
       rank: playerRanks[0],
@@ -413,6 +420,10 @@ function App() {
     card,
   ) => {
     if (isExchangePhase) {
+      if (isExchangeAnimating) {
+        return;
+      }
+
       setExchangeSelectedCardIds(
         (current) => {
           if (current.includes(card.id)) {
@@ -554,15 +565,22 @@ function App() {
         outgoingCardIdsByPlayer,
       });
 
-    completeCardExchange(
-      exchangedHands,
-    );
+    animateCardExchange({
+      hands,
+      playerRanks,
+      outgoingCardIdsByPlayer,
+      onLanding: () => {
+        completeCardExchange(
+          exchangedHands,
+        );
 
-    setExchangeSelectedCardIds([]);
+        setExchangeSelectedCardIds([]);
 
-    setGamePhase(
-      GAME_PHASES.PLAYING,
-    );
+        setGamePhase(
+          GAME_PHASES.PLAYING,
+        );
+      },
+    });
   };
 
   /*
@@ -769,6 +787,10 @@ function App() {
               className={`yourArea ${
                 isExchangePhase
                   ? "exchangeMode"
+                  : ""
+              } ${
+                isExchangeAnimating
+                  ? "exchangeAnimating"
                   : ""
               }`}
             >

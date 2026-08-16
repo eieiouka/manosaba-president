@@ -2946,6 +2946,11 @@ button {
   justify-content: flex-end;
 }
 
+.exchangeMode.exchangeAnimating
+  .playerHand {
+  pointer-events: none;
+}
+
 .exchangeButton:not(:disabled) {
   border-color: #84ffc0;
 
