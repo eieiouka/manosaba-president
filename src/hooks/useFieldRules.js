@@ -189,13 +189,13 @@ export default function useFieldRules({
 
     if (spadeThreeReturn) {
       triggerRuleEvents([
+        ...(forbiddenFinish
+          ? ["forbiddenFinish"]
+          : []),
         ...(finishEvent
           ? [finishEvent]
           : []),
         "spadeThree",
-        ...(forbiddenFinish
-          ? ["forbiddenFinish"]
-          : []),
       ]);
 
       clearFieldAfterSpecial(
@@ -206,6 +206,14 @@ export default function useFieldRules({
     }
 
     const events = [];
+
+    /*
+      禁止上がりは、階級表示や
+      その他の特殊ルールより先に表示する。
+    */
+    if (forbiddenFinish) {
+      events.push("forbiddenFinish");
+    }
 
     if (finishEvent) {
       events.push(finishEvent);
@@ -291,10 +299,6 @@ export default function useFieldRules({
     ) {
       setElevenBack(true);
       events.push("elevenBack");
-    }
-
-    if (forbiddenFinish) {
-      events.push("forbiddenFinish");
     }
 
     triggerRuleEvents(events);
