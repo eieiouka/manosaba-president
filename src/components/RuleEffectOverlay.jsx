@@ -8,6 +8,7 @@ const EFFECT_TEXT = {
   eightCut: "8切り",
   spadeThree: "スペ3返し",
   forbiddenFinish: "禁止上がり",
+  capitalFall: "都落ち",
 
   finishDaifugo: "大富豪",
   finishFugo: "富豪",

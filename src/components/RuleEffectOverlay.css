@@ -24,8 +24,7 @@
     );
 
   animation:
-    ruleEffectFlash 900ms
-    ease-out both;
+    ruleEffectFlash 900ms ease-out both;
 }
 
 .ruleEffectContent {
@@ -34,35 +33,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-
   gap: 28px;
+
   width: 100%;
 
   animation:
     ruleEffectEnter 900ms
-    cubic-bezier(
-      0.16,
-      1,
-      0.3,
-      1
-    )
+    cubic-bezier(0.16, 1, 0.3, 1)
     both;
 }
 
 .ruleEffectContent::before {
   content: "";
-
   position: absolute;
-
   left: 0;
   right: 0;
   top: 50%;
-
   height: 150px;
-
-  transform:
-    translateY(-50%)
-    skewY(-2deg);
+  transform: translateY(-50%) skewY(-2deg);
 
   background:
     linear-gradient(
@@ -75,16 +63,12 @@
     );
 
   border-top:
-    1px solid
-    rgba(229, 190, 93, 0.42);
-
+    1px solid rgba(229, 190, 93, 0.42);
   border-bottom:
-    1px solid
-    rgba(229, 190, 93, 0.42);
+    1px solid rgba(229, 190, 93, 0.42);
 
   box-shadow:
-    0 0 45px
-    rgba(0, 0, 0, 0.6);
+    0 0 45px rgba(0, 0, 0, 0.6);
 }
 
 .ruleEffectContent p {
@@ -108,10 +92,8 @@
 
   text-shadow:
     0 3px 0 #4f220c,
-    0 0 10px
-      rgba(255, 216, 108, 0.75),
-    0 0 32px
-      rgba(190, 41, 24, 0.8);
+    0 0 10px rgba(255, 216, 108, 0.75),
+    0 0 32px rgba(190, 41, 24, 0.8);
 }
 
 .ruleEffectLine {
@@ -133,43 +115,44 @@
   transform: scaleX(-1);
 }
 
-/* ========================================
-   通常ルール発動
-   上がりの金色と区別する
-======================================== */
-
-.ruleEffect-revolution
-  .ruleEffectContent p,
-.ruleEffect-shibari
-  .ruleEffectContent p,
-.ruleEffect-eightCut
-  .ruleEffectContent p,
-.ruleEffect-elevenBack
-  .ruleEffectContent p,
-.ruleEffect-spadeThree
-  .ruleEffectContent p {
-  color: #8fdcff;
-
+.ruleEffect-eightCut .ruleEffectContent p,
+.ruleEffect-spadeThree .ruleEffectContent p {
+  color: #fff0b0;
   text-shadow:
-    0 3px 0 #102b44,
-    0 0 12px
-      rgba(125, 215, 255, 0.95),
-    0 0 38px
-      rgba(32, 125, 255, 0.8);
+    0 3px 0 #711b13,
+    0 0 12px rgba(255, 239, 177, 0.95),
+    0 0 38px rgba(255, 55, 39, 0.9);
 }
 
-.ruleEffect-gekiShibari
-.ruleEffectContent p,
-.ruleEffect-forbiddenFinish
-.ruleEffectContent p {
+.ruleEffect-gekiShibari .ruleEffectContent p,
+.ruleEffect-forbiddenFinish .ruleEffectContent p {
   color: #ff6572;
-
   text-shadow:
     0 3px 0 #4b0007,
-    0 0 12px
-      rgba(255, 65, 82, 0.85),
-    0 0 36px
-      rgba(180, 0, 22, 0.85);
+    0 0 12px rgba(255, 65, 82, 0.85),
+    0 0 36px rgba(180, 0, 22, 0.85);
+}
+
+.ruleEffect-capitalFall
+  .ruleEffectContent::before {
+  background:
+    linear-gradient(
+      90deg,
+      rgba(8, 0, 18, 0),
+      rgba(24, 4, 43, 0.9) 22%,
+      rgba(65, 13, 83, 0.97) 50%,
+      rgba(24, 4, 43, 0.9) 78%,
+      rgba(8, 0, 18, 0)
+    );
+}
+
+.ruleEffect-capitalFall
+  .ruleEffectContent p {
+  color: #f0c8ff;
+  text-shadow:
+    0 3px 0 #24002f,
+    0 0 12px rgba(244, 190, 255, 0.95),
+    0 0 40px rgba(150, 43, 190, 0.9);
 }
 
 @keyframes ruleEffectEnter {

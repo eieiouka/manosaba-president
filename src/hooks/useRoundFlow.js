@@ -7,113 +7,149 @@ import {
   isJoker,
 } from "../utils/presidentRules";
 
-const FINISH_EVENTS = [
-  "finishDaifugo",
-  "finishFugo",
-  "finishHinmin",
+const RANKS_BY_PLACE = [
+  "大富豪",
+  "富豪",
+  "貧民",
+  "大貧民",
 ];
 
-function getActivePlayerIndexes(hands) {
-  return hands
-    .map((hand, index) => ({
-      index,
-      cardCount: hand.length,
-    }))
-    .filter(
-      (player) =>
-        player.cardCount > 0,
-    )
-    .map(
-      (player) => player.index,
-    );
-}
+const FINISH_EVENT_BY_RANK = {
+  大富豪: "finishDaifugo",
+  富豪: "finishFugo",
+  貧民: "finishHinmin",
+  大貧民: "finishDaipinmin",
+};
 
 function containsJoker(cards) {
   return cards.some(isJoker);
 }
 
-export default function useRoundFlow({
-  hands,
+function getUnassignedPlayerIndexes({
   playerCount,
+  normalFinishOrder,
+  penaltyOrder,
+}) {
+  const assignedPlayers = new Set([
+    ...normalFinishOrder,
+    ...penaltyOrder,
+  ]);
+
+  return Array.from(
+    { length: playerCount },
+    (_, playerIndex) => playerIndex,
+  ).filter(
+    (playerIndex) =>
+      !assignedPlayers.has(playerIndex),
+  );
+}
+
+export default function useRoundFlow({
+  playerCount,
+  playerRanks,
 }) {
   const [
     normalFinishOrder,
     setNormalFinishOrder,
   ] = useState([]);
 
+  /*
+    禁止上がり・都落ちが発生した順。
+    先に発生した人から、
+    大貧民 → 貧民の順に確定する。
+  */
+  const [penaltyOrder, setPenaltyOrder] =
+    useState([]);
+
   const [
-    forbiddenFinishPlayerIndex,
-    setForbiddenFinishPlayerIndex,
+    forbiddenFinishPlayerIndexes,
+    setForbiddenFinishPlayerIndexes,
+  ] = useState([]);
+
+  const [
+    capitalFallPlayerIndex,
+    setCapitalFallPlayerIndex,
   ] = useState(null);
 
-  const activePlayerIndexes =
-    useMemo(
-      () =>
-        getActivePlayerIndexes(hands),
-      [hands],
+  const previousDaifugoPlayerIndex =
+    playerRanks?.indexOf("大富豪") ?? -1;
+
+  const resolvedState = useMemo(() => {
+    const remainingPlayers =
+      getUnassignedPlayerIndexes({
+        playerCount,
+        normalFinishOrder,
+        penaltyOrder,
+      });
+
+    const assignedCount =
+      normalFinishOrder.length +
+      penaltyOrder.length;
+
+    const automaticPlayers =
+      assignedCount === playerCount - 1 &&
+      remainingPlayers.length === 1
+        ? remainingPlayers
+        : [];
+
+    const finishOrder = [
+      ...normalFinishOrder,
+      ...automaticPlayers,
+      ...[...penaltyOrder].reverse(),
+    ];
+
+    const rankByPlayer = Array.from(
+      { length: playerCount },
+      () => null,
     );
 
-  const finishOrder =
-    useMemo(() => {
-      const order = [
-        ...normalFinishOrder,
-      ];
+    normalFinishOrder.forEach(
+      (playerIndex, place) => {
+        rankByPlayer[playerIndex] =
+          RANKS_BY_PLACE[place] ?? null;
+      },
+    );
 
-      const eliminatedCount =
-        normalFinishOrder.length +
-        (forbiddenFinishPlayerIndex !==
-        null
-          ? 1
-          : 0);
+    penaltyOrder.forEach(
+      (playerIndex, penaltyPlace) => {
+        const place =
+          playerCount - 1 - penaltyPlace;
 
-      if (
-        activePlayerIndexes.length ===
-          1 &&
-        eliminatedCount >=
-          playerCount - 1
-      ) {
-        const lastPlayer =
-          activePlayerIndexes[0];
+        rankByPlayer[playerIndex] =
+          RANKS_BY_PLACE[place] ?? null;
+      },
+    );
 
-        if (!order.includes(lastPlayer)) {
-          order.push(lastPlayer);
-        }
-      }
+    automaticPlayers.forEach(
+      (playerIndex) => {
+        const place =
+          finishOrder.indexOf(playerIndex);
 
-      if (
-        forbiddenFinishPlayerIndex ===
-        null
-      ) {
-        return order;
-      }
+        rankByPlayer[playerIndex] =
+          RANKS_BY_PLACE[place] ?? null;
+      },
+    );
 
-      const withoutPenalty =
-        order.filter(
-          (playerIndex) =>
-            playerIndex !==
-            forbiddenFinishPlayerIndex,
-        );
+    return {
+      finishOrder,
+      rankByPlayer,
+      isRoundFinished:
+        finishOrder.length === playerCount,
+    };
+  }, [
+    normalFinishOrder,
+    penaltyOrder,
+    playerCount,
+  ]);
 
-      if (
-        eliminatedCount >=
-          playerCount - 1 &&
-        activePlayerIndexes.length <= 1
-      ) {
-        withoutPenalty.push(
-          forbiddenFinishPlayerIndex,
-        );
-      }
+  function getPenaltyRank(
+    nextPenaltyIndex,
+  ) {
+    const place =
+      playerCount - 1 - nextPenaltyIndex;
 
-      return withoutPenalty;
-    }, [
-      normalFinishOrder,
-      forbiddenFinishPlayerIndex,
-      activePlayerIndexes,
-      playerCount,
-    ]);
-
-  const isRoundFinished =
-    finishOrder.length === playerCount;
+    return RANKS_BY_PLACE[place] ?? null;
+  }
 
   function registerFinish({
     playerIndex,
@@ -126,52 +162,143 @@ export default function useRoundFlow({
       return {
         forbiddenFinish: false,
         finishEvent: null,
+        leadingEvents: [],
+        capitalFallPlayerIndex: null,
       };
     }
 
     if (containsJoker(cards)) {
-      setForbiddenFinishPlayerIndex(
-        playerIndex,
+      const penaltyRank =
+        getPenaltyRank(
+          penaltyOrder.length,
+        );
+
+      setForbiddenFinishPlayerIndexes(
+        (current) =>
+          current.includes(playerIndex)
+            ? current
+            : [...current, playerIndex],
       );
+
+      setPenaltyOrder(
+        (current) =>
+          current.includes(playerIndex)
+            ? current
+            : [...current, playerIndex],
+      );
+
+      const penaltyFinishEvent =
+        FINISH_EVENT_BY_RANK[penaltyRank];
 
       return {
         forbiddenFinish: true,
         finishEvent:
-          "finishDaipinmin",
+          penaltyFinishEvent ?? null,
+        leadingEvents: [
+          "forbiddenFinish",
+          penaltyFinishEvent,
+        ].filter(Boolean),
+        capitalFallPlayerIndex: null,
       };
     }
 
-    const finishEvent =
-      FINISH_EVENTS[
+    const normalRank =
+      RANKS_BY_PLACE[
         normalFinishOrder.length
       ] ?? null;
+
+    const normalFinishEvent =
+      FINISH_EVENT_BY_RANK[
+        normalRank
+      ] ?? null;
+
+    const capitalFallTarget =
+      normalFinishOrder.length === 0 &&
+      previousDaifugoPlayerIndex !== -1 &&
+      previousDaifugoPlayerIndex !==
+        playerIndex &&
+      !penaltyOrder.includes(
+        previousDaifugoPlayerIndex,
+      )
+        ? previousDaifugoPlayerIndex
+        : null;
+
+    const leadingEvents = [];
+
+    if (capitalFallTarget !== null) {
+      const capitalFallRank =
+        getPenaltyRank(
+          penaltyOrder.length,
+        );
+
+      setCapitalFallPlayerIndex(
+        capitalFallTarget,
+      );
+
+      setPenaltyOrder(
+        (current) => [
+          ...current,
+          capitalFallTarget,
+        ],
+      );
+
+      leadingEvents.push("capitalFall");
+
+      const capitalFallFinishEvent =
+        FINISH_EVENT_BY_RANK[
+          capitalFallRank
+        ];
+
+      if (capitalFallFinishEvent) {
+        leadingEvents.push(
+          capitalFallFinishEvent,
+        );
+      }
+    }
+
+    if (normalFinishEvent) {
+      leadingEvents.push(
+        normalFinishEvent,
+      );
+    }
 
     setNormalFinishOrder(
       (current) =>
         current.includes(playerIndex)
           ? current
-          : [
-              ...current,
-              playerIndex,
-            ],
+          : [...current, playerIndex],
     );
 
     return {
       forbiddenFinish: false,
-      finishEvent,
+      finishEvent: normalFinishEvent,
+      leadingEvents,
+      capitalFallPlayerIndex:
+        capitalFallTarget,
     };
   }
 
   function resetRoundFinish() {
     setNormalFinishOrder([]);
-    setForbiddenFinishPlayerIndex(null);
+    setPenaltyOrder([]);
+    setForbiddenFinishPlayerIndexes([]);
+    setCapitalFallPlayerIndex(null);
   }
 
   return {
-    finishOrder,
+    finishOrder:
+      resolvedState.finishOrder,
+    rankByPlayer:
+      resolvedState.rankByPlayer,
     normalFinishOrder,
-    forbiddenFinishPlayerIndex,
-    isRoundFinished,
+    penaltyOrder,
+    forbiddenFinishPlayerIndexes,
+    forbiddenFinishPlayerIndex:
+      forbiddenFinishPlayerIndexes[0] ??
+      null,
+    capitalFallPlayerIndex,
+    isRoundFinished:
+      resolvedState.isRoundFinished,
     registerFinish,
     resetRoundFinish,
   };

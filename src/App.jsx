@@ -178,6 +178,7 @@ function App() {
     passEffectPlayerIndexes,
 
     finishOrder,
+    rankByPlayer,
     normalFinishOrder,
     forbiddenFinishPlayerIndex,
     isRoundFinished,
@@ -189,6 +190,7 @@ function App() {
     completeCardExchange,
   } = usePresidentGame({
     animateCpuCards,
+    playerRanks,
     isGameActive:
       gamePhase ===
       GAME_PHASES.PLAYING,
@@ -267,6 +269,10 @@ function App() {
   const getFinishedRank = (
     playerIndex,
   ) => {
+    if (rankByPlayer[playerIndex]) {
+      return rankByPlayer[playerIndex];
+    }
+
     /*
       Joker禁止上がり。
     */
@@ -585,6 +591,10 @@ function App() {
       onLanding: () => {
         completeCardExchange(
           exchangedHands,
+          {
+            playerRanks,
+            outgoingCardIdsByPlayer,
+          },
         );
 
         setExchangeSelectedCardIds([]);

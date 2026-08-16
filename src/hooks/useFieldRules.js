@@ -179,6 +179,7 @@ export default function useFieldRules({
     nextHands,
     forbiddenFinish,
     finishEvent,
+    leadingEvents = [],
   }) {
     const effects =
       getPlayEffects(cards, analysis);
@@ -189,12 +190,7 @@ export default function useFieldRules({
 
     if (spadeThreeReturn) {
       triggerRuleEvents([
-        ...(forbiddenFinish
-          ? ["forbiddenFinish"]
-          : []),
-        ...(finishEvent
-          ? [finishEvent]
-          : []),
+        ...leadingEvents,
         "spadeThree",
       ]);
 
@@ -205,17 +201,26 @@ export default function useFieldRules({
       return;
     }
 
-    const events = [];
+    const events = [
+      ...leadingEvents,
+    ];
 
     /*
-      禁止上がりは、階級表示や
-      その他の特殊ルールより先に表示する。
+      古い呼び出し方との互換用。
+      leadingEventsが渡された場合は
+      そちらですでに順番が確定している。
     */
-    if (forbiddenFinish) {
+    if (
+      leadingEvents.length === 0 &&
+      forbiddenFinish
+    ) {
       events.push("forbiddenFinish");
     }
 
-    if (finishEvent) {
+    if (
+      leadingEvents.length === 0 &&
+      finishEvent
+    ) {
       events.push(finishEvent);
     }
 

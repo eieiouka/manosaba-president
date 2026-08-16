@@ -23,6 +23,15 @@ import {
   playGameSound,
 } from "../utils/gameAudio";
 
+import {
+  buildCpuCardKnowledge,
+  cardToNumber,
+  createCpuCardMemories,
+  recordCardExchange,
+  recordPlayerElimination,
+  recordPublicPlay,
+} from "../utils/cpuCardMemory";
+
 const PLAYER_COUNT = 4;
 
 function getRandomPlayerIndex() {
@@ -133,9 +142,22 @@ function getLeaderAfterClear(
 export default function usePresidentGame({
   animateCpuCards,
   isGameActive = true,
+  playerRanks = [],
 } = {}) {
   const [hands, setHands] =
     useState(createGameHands);
+
+  const [
+    publicPlayedCardNumbers,
+    setPublicPlayedCardNumbers,
+  ] = useState([]);
+
+  const [
+    cpuCardMemories,
+    setCpuCardMemories,
+  ] = useState(() =>
+    createCpuCardMemories(hands),
+  );
 
   const [
     currentPlayerIndex,
@@ -186,16 +208,35 @@ export default function usePresidentGame({
 
   const hand = hands[0];
 
+  const cpuCardKnowledge =
+    useMemo(
+      () =>
+        buildCpuCardKnowledge({
+          memories: cpuCardMemories,
+          hands,
+          publicPlayedCardNumbers,
+        }),
+      [
+        cpuCardMemories,
+        hands,
+        publicPlayedCardNumbers,
+      ],
+    );
+
   const {
     finishOrder,
+    rankByPlayer,
     normalFinishOrder,
+    penaltyOrder,
+    forbiddenFinishPlayerIndexes,
     forbiddenFinishPlayerIndex,
+    capitalFallPlayerIndex,
     isRoundFinished,
     registerFinish,
     resetRoundFinish,
   } = useRoundFlow({
-    hands,
     playerCount: PLAYER_COUNT,
+    playerRanks,
   });
 
   const {
@@ -332,6 +373,22 @@ export default function usePresidentGame({
     playerIndex,
     play,
   }) {
+    setPublicPlayedCardNumbers(
+      (current) => [
+        ...current,
+        ...play.cards.map(cardToNumber),
+      ],
+    );
+
+    setCpuCardMemories(
+      (current) =>
+        recordPublicPlay({
+          memories: current,
+          playerIndex,
+          cards: play.cards,
+        }),
+    );
+
     const chosenIds =
       new Set(play.cardIds);
 
@@ -348,24 +405,52 @@ export default function usePresidentGame({
             : currentHand,
       );
 
-    setHands(nextHands);
-
     const {
       forbiddenFinish,
       finishEvent,
+      leadingEvents,
+      capitalFallPlayerIndex:
+        newCapitalFallPlayerIndex,
     } = registerFinish({
       playerIndex,
       cards: play.cards,
       nextHands,
     });
 
+    const resolvedHands =
+      newCapitalFallPlayerIndex === null
+        ? nextHands
+        : nextHands.map(
+            (currentHand, index) =>
+              index ===
+              newCapitalFallPlayerIndex
+                ? []
+                : currentHand,
+          );
+
+    if (
+      newCapitalFallPlayerIndex !== null
+    ) {
+      setCpuCardMemories(
+        (current) =>
+          recordPlayerElimination({
+            memories: current,
+            playerIndex:
+              newCapitalFallPlayerIndex,
+          }),
+      );
+    }
+
+    setHands(resolvedHands);
+
     applyPlayRules({
       cards: play.cards,
       analysis: play.analysis,
       playerIndex,
-      nextHands,
+      nextHands: resolvedHands,
       forbiddenFinish,
       finishEvent,
+      leadingEvents,
     });
   }
 
@@ -558,8 +643,12 @@ export default function usePresidentGame({
     /*
       新しくカードを配る。
     */
-    setHands(
-      createGameHands(),
+    const nextHands = createGameHands();
+
+    setHands(nextHands);
+    setPublicPlayedCardNumbers([]);
+    setCpuCardMemories(
+      createCpuCardMemories(nextHands),
     );
 
     /*
@@ -599,7 +688,23 @@ export default function usePresidentGame({
 
   function completeCardExchange(
     exchangedHands,
+    exchangeInformation = null,
   ) {
+    if (exchangeInformation) {
+      setCpuCardMemories(
+        (current) =>
+          recordCardExchange({
+            memories: current,
+            handsBeforeExchange: hands,
+            playerRanks:
+              exchangeInformation.playerRanks,
+            outgoingCardIdsByPlayer:
+              exchangeInformation
+                .outgoingCardIdsByPlayer,
+          }),
+      );
+    }
+
     setHands(exchangedHands);
     setSelectedCardIds([]);
   }
@@ -607,6 +712,10 @@ export default function usePresidentGame({
   return {
     hands,
     hand,
+
+    publicPlayedCardNumbers,
+    cpuCardMemories,
+    cpuCardKnowledge,
 
     currentPlayerIndex,
 
@@ -633,9 +742,13 @@ export default function usePresidentGame({
     passEffectPlayerIndexes,
 
     finishOrder,
+    rankByPlayer,
     normalFinishOrder,
+    penaltyOrder,
 
+    forbiddenFinishPlayerIndexes,
     forbiddenFinishPlayerIndex,
+    capitalFallPlayerIndex,
     isRoundFinished,
 
     toggleCardSelection,
