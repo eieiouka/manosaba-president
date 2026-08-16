@@ -226,11 +226,6 @@ export default function useRoundFlow({
     const leadingEvents = [];
 
     if (capitalFallTarget !== null) {
-      const capitalFallRank =
-        getPenaltyRank(
-          penaltyOrder.length,
-        );
-
       setCapitalFallPlayerIndex(
         capitalFallTarget,
       );
@@ -243,17 +238,6 @@ export default function useRoundFlow({
       );
 
       leadingEvents.push("capitalFall");
-
-      const capitalFallFinishEvent =
-        FINISH_EVENT_BY_RANK[
-          capitalFallRank
-        ];
-
-      if (capitalFallFinishEvent) {
-        leadingEvents.push(
-          capitalFallFinishEvent,
-        );
-      }
     }
 
     if (normalFinishEvent) {
