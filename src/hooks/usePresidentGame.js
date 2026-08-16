@@ -125,6 +125,7 @@ function getLeaderAfterClear(
 
 export default function usePresidentGame({
   animateCpuCards,
+  isGameActive = true,
 } = {}) {
   const [hands, setHands] =
     useState(createGameHands);
@@ -283,6 +284,7 @@ export default function usePresidentGame({
   const playableCardIds =
     useMemo(() => {
       if (
+        !isGameActive ||
         currentPlayerIndex !== 0 ||
         isRoundFinished ||
         isRuleEffectPlaying
@@ -300,9 +302,11 @@ export default function usePresidentGame({
       currentPlayerIndex,
       isRoundFinished,
       isRuleEffectPlaying,
+      isGameActive,
     ]);
 
   const canPlaySelectedCards =
+    isGameActive &&
     currentPlayerIndex === 0 &&
     !isRoundFinished &&
     !isRuleEffectPlaying &&
@@ -360,6 +364,7 @@ export default function usePresidentGame({
 
   function toggleCardSelection(card) {
     if (
+      !isGameActive ||
       currentPlayerIndex !== 0 ||
       isRoundFinished ||
       isRuleEffectPlaying
@@ -502,6 +507,7 @@ export default function usePresidentGame({
 
   function passTurn() {
     if (
+      !isGameActive ||
       currentPlayerIndex !== 0 ||
       isRoundFinished ||
       isRuleEffectPlaying
@@ -523,6 +529,7 @@ export default function usePresidentGame({
     lastPlayPlayerIndex,
     isRoundFinished,
     isRuleEffectPlaying,
+    isPaused: !isGameActive,
     animateCpuCards,
 
     getNextPlayerIndex:

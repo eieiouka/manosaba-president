@@ -29,6 +29,7 @@ export default function useCpuTurn({
 
   isRoundFinished,
   isRuleEffectPlaying,
+  isPaused = false,
 
   animateCpuCards,
 
@@ -73,6 +74,7 @@ export default function useCpuTurn({
   useEffect(() => {
     if (
       actionInProgressRef.current ||
+      isPaused ||
       currentPlayerIndex === 0 ||
       isRoundFinished ||
       isRuleEffectPlaying
@@ -197,5 +199,6 @@ export default function useCpuTurn({
     lastPlayPlayerIndex,
     isRoundFinished,
     isRuleEffectPlaying,
+    isPaused,
   ]);
 }

@@ -1,4 +1,5 @@
 import {
+  useEffect,
   useState,
 } from "react";
 
@@ -25,6 +26,13 @@ import {
 } from "./constants/presidentConstants";
 
 const TOTAL_ROUNDS = 5;
+
+const GAME_PHASES = {
+  PLAYING: "playing",
+  ROUND_RESULT: "roundResult",
+  EXCHANGE: "exchange",
+  FINAL_RESULT: "finalResult",
+};
 
 const RANKS_BY_PLACE = [
   "大富豪",
@@ -90,10 +98,8 @@ function App() {
     setDebugMode,
   ] = useState(false);
 
-  const [
-    showFinalResult,
-    setShowFinalResult,
-  ] = useState(false);
+  const [gamePhase, setGamePhase] =
+    useState(GAME_PHASES.PLAYING);
 
   const [
     roundNumber,
@@ -162,9 +168,33 @@ function App() {
     startNextRound,
   } = usePresidentGame({
     animateCpuCards,
+    isGameActive:
+      gamePhase ===
+      GAME_PHASES.PLAYING,
   });
 
+  useEffect(() => {
+    if (
+      gamePhase !==
+        GAME_PHASES.PLAYING ||
+      !isRoundFinished ||
+      isRuleEffectPlaying
+    ) {
+      return;
+    }
+
+    setGamePhase(
+      GAME_PHASES.ROUND_RESULT,
+    );
+  }, [
+    gamePhase,
+    isRoundFinished,
+    isRuleEffectPlaying,
+  ]);
+
   const canPass =
+    gamePhase ===
+      GAME_PHASES.PLAYING &&
     currentPlayerIndex === 0 &&
     playedCards.length > 0 &&
     !isAnimating &&
@@ -299,7 +329,11 @@ function App() {
     );
 
   const handlePlayCard = () => {
-    if (isAnimating) {
+    if (
+      gamePhase !==
+        GAME_PHASES.PLAYING ||
+      isAnimating
+    ) {
       return;
     }
 
@@ -324,7 +358,11 @@ function App() {
   };
 
   const handlePassTurn = () => {
-    if (isAnimating) {
+    if (
+      gamePhase !==
+        GAME_PHASES.PLAYING ||
+      isAnimating
+    ) {
       return;
     }
 
@@ -334,7 +372,11 @@ function App() {
   const handleToggleCard = (
     card,
   ) => {
-    if (isAnimating) {
+    if (
+      gamePhase !==
+        GAME_PHASES.PLAYING ||
+      isAnimating
+    ) {
       return;
     }
 
@@ -402,6 +444,10 @@ function App() {
     */
     startNextRound();
 
+    setGamePhase(
+      GAME_PHASES.PLAYING,
+    );
+
     /*
       ROUNDを進める。
     */
@@ -422,8 +468,8 @@ function App() {
   const handleFinishMatch = () => {
     saveCurrentRound();
 
-    setShowFinalResult(
-      true,
+    setGamePhase(
+      GAME_PHASES.FINAL_RESULT,
     );
   };
 
@@ -730,9 +776,8 @@ function App() {
               全部終了するまでは
               戦績表を表示しない。
             */}
-            {isRoundFinished &&
-              !isRuleEffectPlaying &&
-              !showFinalResult && (
+            {gamePhase ===
+              GAME_PHASES.ROUND_RESULT && (
                 <RoundScoreNotebook
                   roundNumber={
                     roundNumber
@@ -756,7 +801,8 @@ function App() {
               5回戦終了後の
               最終結果。
             */}
-            {showFinalResult && (
+            {gamePhase ===
+              GAME_PHASES.FINAL_RESULT && (
               <FinalMatchResult
                 savedRounds={
                   savedRounds
