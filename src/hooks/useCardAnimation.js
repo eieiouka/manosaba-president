@@ -1,11 +1,16 @@
 import {
   useCallback,
+  useRef,
   useState,
 } from "react";
 
 import {
   playGameSound,
 } from "../utils/gameAudio";
+
+import {
+  getCardImagePath,
+} from "../utils/cardUtils";
 
 const ANIMATION_DURATION = 220;
 
@@ -21,7 +26,34 @@ const FIELD_CARD_SPACING = 75;
 const CARD_PLAY_SOUND =
   "/audio/card-play.mp3";
 
+const CPU_PANEL_SELECTORS = {
+  1: ".playerLeft",
+  2: ".playerTop",
+  3: ".playerRight",
+};
+
+function preloadCardImage(card) {
+  return new Promise((resolve) => {
+    const image = new Image();
+
+    image.onload = resolve;
+    image.onerror = resolve;
+
+    image.src = getCardImagePath(
+      card.suit,
+      card.rank,
+    );
+
+    if (image.complete) {
+      resolve();
+    }
+  });
+}
+
 export default function useCardAnimation() {
+  const animationLockRef =
+    useRef(false);
+
   const [
     isAnimating,
     setIsAnimating,
@@ -50,7 +82,7 @@ export default function useCardAnimation() {
         onLanding,
       }) => {
         if (
-          isAnimating ||
+          animationLockRef.current ||
           cards.length === 0
         ) {
           return;
@@ -72,6 +104,9 @@ export default function useCardAnimation() {
           この瞬間に
           カード音も鳴らす。
         */
+        animationLockRef.current =
+          true;
+
         setIsAnimating(true);
 
         playCardSound();
@@ -281,6 +316,9 @@ export default function useCardAnimation() {
             false,
           );
 
+          animationLockRef.current =
+            false;
+
           return;
         }
 
@@ -337,15 +375,280 @@ export default function useCardAnimation() {
         setIsAnimating(
           false,
         );
+
+        animationLockRef.current =
+          false;
       },
       [
-        isAnimating,
         playCardSound,
       ],
+    );
+
+  const animateCpuCards =
+    useCallback(
+      async ({
+        playerIndex,
+        cards,
+        onLanding,
+      }) => {
+        if (
+          animationLockRef.current ||
+          cards.length === 0
+        ) {
+          return;
+        }
+
+        const panelSelector =
+          CPU_PANEL_SELECTORS[
+            playerIndex
+          ];
+
+        const fieldElement =
+          document.querySelector(
+            ".fieldArea",
+          );
+
+        const panelElement =
+          panelSelector
+            ? document.querySelector(
+                panelSelector,
+              )
+            : null;
+
+        if (
+          !fieldElement ||
+          !panelElement
+        ) {
+          onLanding?.();
+          return;
+        }
+
+        const opponentCards = [
+          ...panelElement.querySelectorAll(
+            ".opponentCard",
+          ),
+        ];
+
+        const sourceElements =
+          opponentCards.slice(
+            -cards.length,
+          );
+
+        if (
+          sourceElements.length !==
+          cards.length
+        ) {
+          onLanding?.();
+          return;
+        }
+
+        animationLockRef.current =
+          true;
+
+        setIsAnimating(true);
+        playCardSound();
+
+        const faceImagesReady =
+          Promise.all(
+            cards.map(
+              preloadCardImage,
+            ),
+          );
+
+        const fieldRect =
+          fieldElement.getBoundingClientRect();
+
+        const scaleX =
+          fieldRect.width /
+          FIELD_WIDTH;
+
+        const scaleY =
+          fieldRect.height /
+          FIELD_HEIGHT;
+
+        const centerIndex =
+          (cards.length - 1) / 2;
+
+        const flyingItems = [];
+
+        sourceElements.forEach(
+          (
+            sourceElement,
+            index,
+          ) => {
+            const sourceImage =
+              sourceElement.querySelector(
+                "img",
+              );
+
+            if (!sourceImage) {
+              return;
+            }
+
+            const sourceRect =
+              sourceElement.getBoundingClientRect();
+
+            const clone =
+              sourceImage.cloneNode(true);
+
+            clone.src =
+              "/cards_webp/card_back.webp";
+
+            const cardOffset =
+              (index - centerIndex) *
+              FIELD_CARD_SPACING;
+
+            const cardRotation =
+              (index - centerIndex) *
+              2;
+
+            const destinationX =
+              fieldRect.left +
+              fieldRect.width / 2 +
+              cardOffset * scaleX;
+
+            const destinationY =
+              fieldRect.top +
+              (FIELD_CARD_TOP +
+                FIELD_CARD_HEIGHT /
+                  2) *
+                scaleY;
+
+            const sourceCenterX =
+              sourceRect.left +
+              sourceRect.width / 2;
+
+            const sourceCenterY =
+              sourceRect.top +
+              sourceRect.height / 2;
+
+            const moveX =
+              destinationX -
+              sourceCenterX;
+
+            const moveY =
+              destinationY -
+              sourceCenterY;
+
+            const destinationWidth =
+              FIELD_CARD_WIDTH *
+              scaleX;
+
+            const destinationScale =
+              destinationWidth /
+              sourceRect.width;
+
+            Object.assign(
+              clone.style,
+              {
+                position: "fixed",
+                top: `${sourceRect.top}px`,
+                left: `${sourceRect.left}px`,
+                width: `${sourceRect.width}px`,
+                height: `${sourceRect.height}px`,
+                margin: "0",
+                padding: "0",
+                zIndex: "99999",
+                objectFit: "fill",
+                borderRadius: "8px",
+                pointerEvents: "none",
+                userSelect: "none",
+                transformOrigin:
+                  "center center",
+                willChange:
+                  "transform",
+              },
+            );
+
+            document.body.appendChild(
+              clone,
+            );
+
+            sourceElement.style.visibility =
+              "hidden";
+
+            const animation =
+              clone.animate(
+                [
+                  {
+                    transform:
+                      "translate(0px, 0px) rotate(0deg) scale(1)",
+                  },
+                  {
+                    transform:
+                      `translate(${moveX}px, ${moveY}px) rotate(${cardRotation}deg) scale(${destinationScale})`,
+                  },
+                ],
+                {
+                  duration:
+                    ANIMATION_DURATION,
+                  easing:
+                    "cubic-bezier(0.2, 0.8, 0.2, 1)",
+                  fill: "forwards",
+                },
+              );
+
+            flyingItems.push({
+              clone,
+              sourceElement,
+              animation,
+            });
+          },
+        );
+
+        if (
+          flyingItems.length === 0
+        ) {
+          animationLockRef.current =
+            false;
+
+          setIsAnimating(false);
+          onLanding?.();
+          return;
+        }
+
+        await Promise.all([
+          faceImagesReady,
+          ...flyingItems.map(
+            ({ animation }) =>
+              animation.finished.catch(
+                () => {},
+              ),
+          ),
+        ]);
+
+        onLanding?.();
+
+        await new Promise(
+          (resolve) => {
+            window.requestAnimationFrame(
+              resolve,
+            );
+          },
+        );
+
+        flyingItems.forEach(
+          ({
+            clone,
+            sourceElement,
+          }) => {
+            clone.remove();
+            sourceElement.style.visibility =
+              "";
+          },
+        );
+
+        animationLockRef.current =
+          false;
+
+        setIsAnimating(false);
+      },
+      [playCardSound],
     );
 
   return {
     isAnimating,
     animateCards,
+    animateCpuCards,
   };
 }

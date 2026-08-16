@@ -1,10 +1,17 @@
 function TurnControls({
   canPlay,
+  canPass,
   onPlayCard,
   onPassTurn,
 }) {
   return (
-    <div className="actionButtons">
+    <div
+      className={`actionButtons ${
+        canPass
+          ? "playerTurn"
+          : ""
+      }`}
+    >
       <button
         type="button"
         className="playCardButton"
@@ -28,6 +35,7 @@ function TurnControls({
         type="button"
         className="passButton passOnly"
         onClick={onPassTurn}
+        disabled={!canPass}
       >
         <span className="passButtonLabel">
           PASS

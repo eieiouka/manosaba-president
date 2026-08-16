@@ -126,8 +126,16 @@ function App() {
     );
 
   const {
+    isAnimating,
+    animateCards,
+    animateCpuCards,
+  } = useCardAnimation();
+
+  const {
     hands,
     hand,
+
+    currentPlayerIndex,
 
     selectedCardIds,
     selectedCards,
@@ -152,12 +160,16 @@ function App() {
     playSelectedCards,
     passTurn,
     startNextRound,
-  } = usePresidentGame();
+  } = usePresidentGame({
+    animateCpuCards,
+  });
 
-  const {
-    isAnimating,
-    animateCards,
-  } = useCardAnimation();
+  const canPass =
+    currentPlayerIndex === 0 &&
+    playedCards.length > 0 &&
+    !isAnimating &&
+    !isRuleEffectPlaying &&
+    !isRoundFinished;
 
   /*
     =====================================
@@ -698,6 +710,9 @@ function App() {
                 canPlay={
                   canPlaySelectedCards &&
                   !isAnimating
+                }
+                canPass={
+                  canPass
                 }
                 onPlayCard={
                   handlePlayCard

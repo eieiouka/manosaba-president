@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -141,7 +142,12 @@ function containsJoker(cards) {
   return cards.some(isJoker);
 }
 
-export default function usePresidentGame() {
+export default function usePresidentGame({
+  animateCpuCards,
+} = {}) {
+  const cpuActionInProgressRef =
+    useRef(false);
+
   const [hands, setHands] =
     useState(createGameHands);
 
@@ -1082,6 +1088,7 @@ export default function usePresidentGame() {
 
   useEffect(() => {
     if (
+      cpuActionInProgressRef.current ||
       currentPlayerIndex === 0 ||
       isRoundFinished ||
       isRuleEffectPlaying
@@ -1139,13 +1146,33 @@ export default function usePresidentGame() {
         const chosenPlay =
           legalCpuPlays[0];
 
-       if (chosenPlay) {
-          playCpuCardSound();
+        if (chosenPlay) {
+          const commitCpuPlay = () => {
+            cpuActionInProgressRef.current =
+              false;
 
-          commitPlay({
-            playerIndex: cpuIndex,
-            play: chosenPlay,
-          });
+            commitPlay({
+              playerIndex: cpuIndex,
+              play: chosenPlay,
+            });
+          };
+
+          if (animateCpuCards) {
+            cpuActionInProgressRef.current =
+              true;
+
+            animateCpuCards({
+              playerIndex: cpuIndex,
+              cards: chosenPlay.cards,
+              onLanding:
+                commitCpuPlay,
+            });
+
+            return;
+          }
+
+          playCpuCardSound();
+          commitCpuPlay();
 
           return;
         }
@@ -1166,6 +1193,7 @@ export default function usePresidentGame() {
     lastPlayPlayerIndex,
     isRoundFinished,
     isRuleEffectPlaying,
+    animateCpuCards,
   ]);
 
   /*
