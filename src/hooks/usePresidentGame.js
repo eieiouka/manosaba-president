@@ -32,13 +32,24 @@ const RULE_EFFECT_TIME = 900;
 const CARD_PLAY_SOUND_SOURCE =
   "/audio/card-play.mp3";
 
-const PASS_SOUND_SOURCE =
-  "/audio/pass.mp3";
+const PASS_VOICE_SOURCES = [
+  "/audio/nanoka-pass.mp3",
+  "/audio/ema-pass.mp3",
+  "/audio/sherry-pass.mp3",
+  "/audio/hanna-pass.mp3",
+];
 
-function playPassSound() {
-  playGameSound(
-    PASS_SOUND_SOURCE,
-  );
+function playPassVoice(playerIndex) {
+  const source =
+    PASS_VOICE_SOURCES[
+      playerIndex
+    ];
+
+  if (!source) {
+    return;
+  }
+
+  playGameSound(source);
 }
 
 function playCpuCardSound() {
@@ -1009,7 +1020,7 @@ export default function usePresidentGame() {
       人間・CPU共通の
       パス音とPASS表示。
     */
-    playPassSound();
+    playPassVoice(playerIndex);
 
     setPassEffectPlayerIndexes(
       (current) =>
