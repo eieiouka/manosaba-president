@@ -1,9 +1,10 @@
 import {
   useEffect,
   useMemo,
-  useRef,
   useState,
 } from "react";
+
+import useCpuTurn from "./useCpuTurn";
 
 import {
   createGameHands,
@@ -27,11 +28,7 @@ import {
 } from "../utils/gameAudio";
 
 const PLAYER_COUNT = 4;
-const CPU_THINK_TIME = 700;
 const RULE_EFFECT_TIME = 900;
-
-const CARD_PLAY_SOUND_SOURCE =
-  "/audio/card-play.mp3";
 
 const PASS_VOICE_SOURCES = [
   "/audio/nanoka-pass.mp3",
@@ -51,12 +48,6 @@ function playPassVoice(playerIndex) {
   }
 
   playGameSound(source);
-}
-
-function playCpuCardSound() {
-  playGameSound(
-    CARD_PLAY_SOUND_SOURCE,
-  );
 }
 
 function getActivePlayerIndexes(hands) {
@@ -145,9 +136,6 @@ function containsJoker(cards) {
 export default function usePresidentGame({
   animateCpuCards,
 } = {}) {
-  const cpuActionInProgressRef =
-    useRef(false);
-
   const [hands, setHands] =
     useState(createGameHands);
 
@@ -1086,104 +1074,7 @@ export default function usePresidentGame({
     handlePass(0);
   }
 
-  useEffect(() => {
-    if (
-      cpuActionInProgressRef.current ||
-      currentPlayerIndex === 0 ||
-      isRoundFinished ||
-      isRuleEffectPlaying
-    ) {
-      return undefined;
-    }
-
-    if (
-      hands[currentPlayerIndex]
-        .length === 0
-    ) {
-      const nextPlayer =
-        getNextActivePlayerIndex(
-          hands,
-          currentPlayerIndex,
-        );
-
-      if (nextPlayer !== null) {
-        setCurrentPlayerIndex(
-          nextPlayer,
-        );
-      }
-
-      return undefined;
-    }
-
-    const timerId =
-      window.setTimeout(() => {
-        const cpuIndex =
-          currentPlayerIndex;
-
-        const cpuHand =
-          hands[cpuIndex];
-
-        const legalCpuPlays =
-          getAllValidPlays(
-            cpuHand,
-          ).filter((play) =>
-            canBeatPlay(
-              play.analysis,
-              fieldPlay,
-              {
-                ...ruleContext,
-                candidateCards:
-                  play.cards,
-              },
-            ),
-          );
-
-        /*
-          暫定CPUは
-          一番左側から作れる
-          最初の合法手。
-        */
-        const chosenPlay =
-          legalCpuPlays[0];
-
-        if (chosenPlay) {
-          const commitCpuPlay = () => {
-            cpuActionInProgressRef.current =
-              false;
-
-            commitPlay({
-              playerIndex: cpuIndex,
-              play: chosenPlay,
-            });
-          };
-
-          if (animateCpuCards) {
-            cpuActionInProgressRef.current =
-              true;
-
-            animateCpuCards({
-              playerIndex: cpuIndex,
-              cards: chosenPlay.cards,
-              onLanding:
-                commitCpuPlay,
-            });
-
-            return;
-          }
-
-          playCpuCardSound();
-          commitCpuPlay();
-
-          return;
-        }
-
-        handlePass(cpuIndex);
-      }, CPU_THINK_TIME);
-
-    return () => {
-      window.clearTimeout(timerId);
-    };
-    }, [
+  useCpuTurn({
     currentPlayerIndex,
     hands,
     fieldPlay,
@@ -1194,7 +1085,14 @@ export default function usePresidentGame({
     isRoundFinished,
     isRuleEffectPlaying,
     animateCpuCards,
-  ]);
+
+    getNextPlayerIndex:
+      getNextActivePlayerIndex,
+
+    setCurrentPlayerIndex,
+    commitPlay,
+    handlePass,
+  });
 
   /*
     ==============================
