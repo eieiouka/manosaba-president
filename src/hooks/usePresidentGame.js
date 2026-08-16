@@ -5,6 +5,7 @@ import {
 } from "react";
 
 import useCpuTurn from "./useCpuTurn";
+import useRoundFlow from "./useRoundFlow";
 
 import {
   createGameHands,
@@ -18,7 +19,6 @@ import {
   getPlayEffects,
   getSingleNaturalStrength,
   getSingleNaturalSuit,
-  isJoker,
   isSingleJoker,
   isSpadeThree,
 } from "../utils/presidentRules";
@@ -127,10 +127,6 @@ function getLeaderAfterClear(
     hands,
     lastPlayPlayerIndex,
   );
-}
-
-function containsJoker(cards) {
-  return cards.some(isJoker);
 }
 
 export default function usePresidentGame({
@@ -249,103 +245,19 @@ export default function usePresidentGame({
     setPendingSpecialClear,
   ] = useState(null);
 
-  /*
-    正常に上がった順番。
-  */
-  const [
-    normalFinishOrder,
-    setNormalFinishOrder,
-  ] = useState([]);
-
-  /*
-    Joker禁止上がりをした人。
-    Jokerは1枚なので最大1人。
-  */
-  const [
-    forbiddenFinishPlayerIndex,
-    setForbiddenFinishPlayerIndex,
-  ] = useState(null);
-
   const hand = hands[0];
 
-  const activePlayerIndexes =
-    useMemo(
-      () =>
-        getActivePlayerIndexes(hands),
-      [hands],
-    );
-
-  /*
-    最終順位。
-
-    禁止上がりした人は
-    必ず最後へ送る。
-  */
-  const finishOrder =
-    useMemo(() => {
-      const order = [
-        ...normalFinishOrder,
-      ];
-
-      const eliminatedCount =
-        normalFinishOrder.length +
-        (forbiddenFinishPlayerIndex !==
-        null
-          ? 1
-          : 0);
-
-      if (
-        activePlayerIndexes.length ===
-          1 &&
-        eliminatedCount >= 3
-      ) {
-        const lastPlayer =
-          activePlayerIndexes[0];
-
-        if (!order.includes(lastPlayer)) {
-          order.push(lastPlayer);
-        }
-      }
-
-      if (
-        forbiddenFinishPlayerIndex !==
-        null
-      ) {
-        const withoutPenalty =
-          order.filter(
-            (playerIndex) =>
-              playerIndex !==
-              forbiddenFinishPlayerIndex,
-          );
-
-        /*
-          ゲーム終了前でも
-          反則者は4位確定だが、
-          finishOrderは順位順を
-          保つため最後に置く。
-        */
-        if (
-          eliminatedCount >= 3 &&
-          activePlayerIndexes.length <= 1
-        ) {
-          withoutPenalty.push(
-            forbiddenFinishPlayerIndex,
-          );
-        }
-
-        return withoutPenalty;
-      }
-
-      return order;
-    }, [
-      normalFinishOrder,
-      forbiddenFinishPlayerIndex,
-      activePlayerIndexes,
-    ]);
-
-  const isRoundFinished =
-    finishOrder.length ===
-    PLAYER_COUNT;
+  const {
+    finishOrder,
+    normalFinishOrder,
+    forbiddenFinishPlayerIndex,
+    isRoundFinished,
+    registerFinish,
+    resetRoundFinish,
+  } = useRoundFlow({
+    hands,
+    playerCount: PLAYER_COUNT,
+  });
 
   const fieldPlay =
     useMemo(
@@ -593,77 +505,6 @@ export default function usePresidentGame({
     setPendingSpecialClear({
       playerIndex,
     });
-  }
-
-  function registerFinish({
-    playerIndex,
-    cards,
-    nextHands,
-  }) {
-    /*
-      まだカードを持っているので
-      上がりではない。
-    */
-    if (
-      nextHands[playerIndex]
-        .length !== 0
-    ) {
-      return {
-        forbiddenFinish: false,
-        finishEvent: null,
-      };
-    }
-
-    /*
-      Jokerを含んだ上がりは
-      禁止上がりなので大貧民。
-    */
-    if (containsJoker(cards)) {
-      setForbiddenFinishPlayerIndex(
-        playerIndex,
-      );
-
-      return {
-        forbiddenFinish: true,
-        finishEvent:
-          "finishDaipinmin",
-      };
-    }
-
-    /*
-      正常に上がった順番。
-
-      0人上がり済み → 大富豪
-      1人上がり済み → 富豪
-      2人上がり済み → 貧民
-    */
-    const finishEvents = [
-      "finishDaifugo",
-      "finishFugo",
-      "finishHinmin",
-    ];
-
-    const finishEvent =
-      finishEvents[
-        normalFinishOrder.length
-      ] ?? null;
-
-    setNormalFinishOrder(
-      (current) =>
-        current.includes(
-          playerIndex,
-        )
-          ? current
-          : [
-              ...current,
-              playerIndex,
-            ],
-    );
-
-    return {
-      forbiddenFinish: false,
-      finishEvent,
-    };
   }
 
   /*
@@ -1152,8 +993,7 @@ export default function usePresidentGame({
     /*
       順位記録をリセット。
     */
-    setNormalFinishOrder([]);
-    setForbiddenFinishPlayerIndex(null);
+    resetRoundFinish();
   }
 
   return {
