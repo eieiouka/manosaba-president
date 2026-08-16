@@ -2951,8 +2951,10 @@ button {
   pointer-events: none;
 }
 
-.exchangeButton:not(:disabled) {
+.exchangeButton {
   border-color: #84ffc0;
+
+  color: #10291d;
 
   background:
     radial-gradient(
@@ -2969,4 +2971,23 @@ button {
       rgba(46, 224, 132, 0.58),
     0 0.7cqw 1.4cqw
       rgba(0, 0, 0, 0.3);
+}
+
+.exchangeButton:disabled {
+  opacity: 0.58;
+
+  filter:
+    brightness(0.62)
+    saturate(0.7);
+
+  box-shadow:
+    inset 0 1px 0
+      rgba(255, 255, 255, 0.22),
+    0 0.7cqw 1.4cqw
+      rgba(0, 0, 0, 0.3);
+}
+
+.exchangeButton:not(:disabled) {
+  opacity: 1;
+  filter: none;
 }
