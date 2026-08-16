@@ -586,6 +586,13 @@ export default function usePresidentGame({
     resetRoundFinish();
   }
 
+  function completeCardExchange(
+    exchangedHands,
+  ) {
+    setHands(exchangedHands);
+    setSelectedCardIds([]);
+  }
+
   return {
     hands,
     hand,
@@ -625,5 +632,6 @@ export default function usePresidentGame({
     passTurn,
 
     startNextRound,
+    completeCardExchange,
   };
 }

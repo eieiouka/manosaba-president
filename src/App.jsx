@@ -10,6 +10,7 @@ import PlayerPanel from "./components/PlayerPanel";
 import PlayingCard from "./components/PlayingCard";
 import TurnControls from "./components/TurnControls";
 import RuleEffectOverlay from "./components/RuleEffectOverlay";
+import CardExchangeControls from "./components/CardExchangeControls";
 
 import RoundScoreNotebook from "./components/RoundScoreNotebook";
 import FinalMatchResult from "./components/FinalMatchResult";
@@ -17,6 +18,14 @@ import FinalMatchResult from "./components/FinalMatchResult";
 import useCardAnimation from "./hooks/useCardAnimation";
 import useGameScale from "./hooks/useGameScale";
 import usePresidentGame from "./hooks/usePresidentGame";
+
+import {
+  createExchangedHands,
+  getExchangeCount,
+  getExchangePlayableCardIds,
+  getCpuExchangeCardIds,
+  isValidExchangeSelection,
+} from "./utils/cardExchangeUtils";
 
 import {
   GAME_WIDTH,
@@ -102,6 +111,11 @@ function App() {
     useState(GAME_PHASES.PLAYING);
 
   const [
+    exchangeSelectedCardIds,
+    setExchangeSelectedCardIds,
+  ] = useState([]);
+
+  const [
     roundNumber,
     setRoundNumber,
   ] = useState(1);
@@ -166,6 +180,7 @@ function App() {
     playSelectedCards,
     passTurn,
     startNextRound,
+    completeCardExchange,
   } = usePresidentGame({
     animateCpuCards,
     isGameActive:
@@ -200,6 +215,31 @@ function App() {
     !isAnimating &&
     !isRuleEffectPlaying &&
     !isRoundFinished;
+
+  const isExchangePhase =
+    gamePhase === GAME_PHASES.EXCHANGE;
+
+  const exchangeCount =
+    getExchangeCount(playerRanks[0]);
+
+  const exchangePlayableCardIds =
+    isExchangePhase
+      ? getExchangePlayableCardIds({
+          hand,
+          rank: playerRanks[0],
+          selectedCardIds:
+            exchangeSelectedCardIds,
+        })
+      : [];
+
+  const canConfirmExchange =
+    isExchangePhase &&
+    isValidExchangeSelection({
+      hand,
+      rank: playerRanks[0],
+      selectedCardIds:
+        exchangeSelectedCardIds,
+    });
 
   /*
     =====================================
@@ -372,6 +412,33 @@ function App() {
   const handleToggleCard = (
     card,
   ) => {
+    if (isExchangePhase) {
+      setExchangeSelectedCardIds(
+        (current) => {
+          if (current.includes(card.id)) {
+            return current.filter(
+              (cardId) =>
+                cardId !== card.id,
+            );
+          }
+
+          if (
+            current.length >=
+              exchangeCount ||
+            !exchangePlayableCardIds.includes(
+              card.id,
+            )
+          ) {
+            return current;
+          }
+
+          return [...current, card.id];
+        },
+      );
+
+      return;
+    }
+
     if (
       gamePhase !==
         GAME_PHASES.PLAYING ||
@@ -445,8 +512,10 @@ function App() {
     startNextRound();
 
     setGamePhase(
-      GAME_PHASES.PLAYING,
+      GAME_PHASES.EXCHANGE,
     );
+
+    setExchangeSelectedCardIds([]);
 
     /*
       ROUNDを進める。
@@ -457,6 +526,42 @@ function App() {
           current + 1,
           TOTAL_ROUNDS,
         ),
+    );
+  };
+
+  const handleConfirmExchange = () => {
+    if (!canConfirmExchange) {
+      return;
+    }
+
+    const outgoingCardIdsByPlayer =
+      hands.map(
+        (playerHand, playerIndex) =>
+          playerIndex === 0
+            ? exchangeSelectedCardIds
+            : getCpuExchangeCardIds(
+                playerHand,
+                playerRanks[
+                  playerIndex
+                ],
+              ),
+      );
+
+    const exchangedHands =
+      createExchangedHands({
+        hands,
+        playerRanks,
+        outgoingCardIdsByPlayer,
+      });
+
+    completeCardExchange(
+      exchangedHands,
+    );
+
+    setExchangeSelectedCardIds([]);
+
+    setGamePhase(
+      GAME_PHASES.PLAYING,
     );
   };
 
@@ -660,7 +765,13 @@ function App() {
             {/*
               ナノカ
             */}
-            <section className="yourArea">
+            <section
+              className={`yourArea ${
+                isExchangePhase
+                  ? "exchangeMode"
+                  : ""
+              }`}
+            >
               <div className="yourInformation">
                 <div className="yourPortraitSlot">
                   <img
@@ -730,14 +841,23 @@ function App() {
                             index
                           }
                           selected={
-                            selectedCardIds.includes(
-                              card.id,
-                            )
+                            (
+                              isExchangePhase
+                                ? exchangeSelectedCardIds
+                                : selectedCardIds
+                            ).includes(card.id)
                           }
                           playable={
-                            playableCardIds.includes(
-                              card.id,
-                            )
+                            (
+                              isExchangePhase
+                                ? exchangePlayableCardIds
+                                : playableCardIds
+                            ).includes(card.id)
+                          }
+                          playableVariant={
+                            isExchangePhase
+                              ? "exchange"
+                              : "play"
                           }
                           onToggle={
                             handleToggleCard
@@ -752,21 +872,32 @@ function App() {
                 </div>
               )}
 
-              <TurnControls
-                canPlay={
-                  canPlaySelectedCards &&
-                  !isAnimating
-                }
-                canPass={
-                  canPass
-                }
-                onPlayCard={
-                  handlePlayCard
-                }
-                onPassTurn={
-                  handlePassTurn
-                }
-              />
+              {isExchangePhase ? (
+                <CardExchangeControls
+                  canExchange={
+                    canConfirmExchange
+                  }
+                  onExchange={
+                    handleConfirmExchange
+                  }
+                />
+              ) : (
+                <TurnControls
+                  canPlay={
+                    canPlaySelectedCards &&
+                    !isAnimating
+                  }
+                  canPass={
+                    canPass
+                  }
+                  onPlayCard={
+                    handlePlayCard
+                  }
+                  onPassTurn={
+                    handlePassTurn
+                  }
+                />
+              )}
             </section>
 
             {/*

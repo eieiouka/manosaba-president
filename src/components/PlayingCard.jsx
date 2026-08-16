@@ -8,10 +8,18 @@ function PlayingCard({
   index,
   selected,
   playable,
+  playableVariant = "play",
   onToggle,
 }) {
   const cardLabel =
     getCardLabel(card);
+
+  const playableClassName =
+    !playable
+      ? ""
+      : playableVariant === "exchange"
+        ? "exchangePlayableCard"
+        : "playableCard";
 
   const handleClick = () => {
     /*
@@ -37,9 +45,7 @@ function PlayingCard({
   return (
     <button
       className={`playingCard ${
-        playable
-          ? "playableCard"
-          : ""
+        playableClassName
       } ${
         selected
           ? "selectedCard"
