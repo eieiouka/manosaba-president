@@ -511,16 +511,29 @@ function App() {
       今回の順位を
       次回ゲームの階級へ反映。
     */
-    setPlayerRanks(
+    const nextPlayerRanks =
       createRanksFromFinishOrder(
         finishOrder,
-      ),
+      );
+
+    setPlayerRanks(
+      nextPlayerRanks,
     );
+
+    const daipinminPlayerIndex =
+      nextPlayerRanks.indexOf(
+        "大貧民",
+      );
 
     /*
       新しく53枚を配る。
     */
-    startNextRound();
+    startNextRound({
+      startingPlayerIndex:
+        daipinminPlayerIndex === -1
+          ? 0
+          : daipinminPlayerIndex,
+    });
 
     setGamePhase(
       GAME_PHASES.EXCHANGE,

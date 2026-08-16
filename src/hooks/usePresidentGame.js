@@ -24,6 +24,13 @@ import {
 } from "../utils/gameAudio";
 
 const PLAYER_COUNT = 4;
+
+function getRandomPlayerIndex() {
+  return Math.floor(
+    Math.random() * PLAYER_COUNT,
+  );
+}
+
 const PASS_VOICE_SOURCES = [
   "/audio/nanoka-pass.mp3",
   "/audio/ema-pass.mp3",
@@ -133,7 +140,7 @@ export default function usePresidentGame({
   const [
     currentPlayerIndex,
     setCurrentPlayerIndex,
-  ] = useState(0);
+  ] = useState(getRandomPlayerIndex);
 
   const [
     selectedCardIds,
@@ -545,7 +552,9 @@ export default function usePresidentGame({
     次のラウンドを開始
     ==============================
   */
-  function startNextRound() {
+  function startNextRound({
+    startingPlayerIndex = 0,
+  } = {}) {
     /*
       新しくカードを配る。
     */
@@ -556,7 +565,9 @@ export default function usePresidentGame({
     /*
       ターンを初期化。
     */
-    setCurrentPlayerIndex(0);
+    setCurrentPlayerIndex(
+      startingPlayerIndex,
+    );
 
     /*
       カード選択を解除。
