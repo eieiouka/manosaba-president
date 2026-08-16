@@ -5,6 +5,7 @@ import {
 } from "react";
 
 import useCpuTurn from "./useCpuTurn";
+import useFieldRules from "./useFieldRules";
 import useRoundFlow from "./useRoundFlow";
 
 import {
@@ -16,11 +17,6 @@ import {
   canBeatPlay,
   getAllValidPlays,
   getPlayableCardIds,
-  getPlayEffects,
-  getSingleNaturalStrength,
-  getSingleNaturalSuit,
-  isSingleJoker,
-  isSpadeThree,
 } from "../utils/presidentRules";
 
 import {
@@ -28,8 +24,6 @@ import {
 } from "../utils/gameAudio";
 
 const PLAYER_COUNT = 4;
-const RULE_EFFECT_TIME = 900;
-
 const PASS_VOICE_SOURCES = [
   "/audio/nanoka-pass.mp3",
   "/audio/ema-pass.mp3",
@@ -182,69 +176,6 @@ export default function usePresidentGame({
     currentPlayerIndex,
   ]);
 
-  /*
-    革命だけは場が流れても残る。
-  */
-  const [
-    revolution,
-    setRevolution,
-  ] = useState(false);
-
-  /*
-    以下は場が流れたら解除。
-  */
-  const [
-    elevenBack,
-    setElevenBack,
-  ] = useState(false);
-
-  const [
-    lockedSuit,
-    setLockedSuit,
-  ] = useState(null);
-
-  const [
-    gekiShibari,
-    setGekiShibari,
-  ] = useState(false);
-
-  const [
-    singleStrengthHistory,
-    setSingleStrengthHistory,
-  ] = useState([]);
-
-  /*
-    将来のエフェクト表示用。
-
-    revolution
-    shibari
-    gekiShibari
-    elevenBack
-    eightCut
-    spadeThree
-    forbiddenFinish
-  */
-  const [
-    lastRuleEvents,
-    setLastRuleEvents,
-  ] = useState([]);
-
-  const [
-    ruleEffectQueue,
-    setRuleEffectQueue,
-  ] = useState([]);
-
-  const activeRuleEffect =
-    ruleEffectQueue[0] ?? null;
-
-  const isRuleEffectPlaying =
-    ruleEffectQueue.length > 0;
-
-  const [
-    pendingSpecialClear,
-    setPendingSpecialClear,
-  ] = useState(null);
-
   const hand = hands[0];
 
   const {
@@ -257,6 +188,32 @@ export default function usePresidentGame({
   } = useRoundFlow({
     hands,
     playerCount: PLAYER_COUNT,
+  });
+
+  const {
+    revolution,
+    elevenBack,
+    lockedSuit,
+    gekiShibari,
+    singleStrengthHistory,
+
+    lastRuleEvents,
+    activeRuleEffect,
+    isRuleEffectPlaying,
+
+    applyPlayRules,
+    resetTemporaryFieldRules,
+    clearRuleEffects,
+    resetFieldRules,
+  } = useFieldRules({
+    hands,
+    playedCards,
+    setPlayedCards,
+    setLastPlayPlayerIndex,
+    setConsecutivePasses,
+    setCurrentPlayerIndex,
+    getNextPlayerIndex:
+      getNextActivePlayerIndex,
   });
 
   const fieldPlay =
@@ -359,364 +316,6 @@ export default function usePresidentGame({
           selectedCards,
       },
     );
-
-  function resetTemporaryFieldRules() {
-    setElevenBack(false);
-    setLockedSuit(null);
-    setGekiShibari(false);
-    setSingleStrengthHistory([]);
-  }
-
-  function triggerRuleEvents(events) {
-    setLastRuleEvents(events);
-    setRuleEffectQueue(events);
-  }
-
-  useEffect(() => {
-    if (!activeRuleEffect) {
-      return undefined;
-    }
-
-    const timerId =
-      window.setTimeout(() => {
-        setRuleEffectQueue(
-          (current) =>
-            current.slice(1),
-        );
-      }, RULE_EFFECT_TIME);
-
-    return () => {
-      window.clearTimeout(timerId);
-    };
-  }, [activeRuleEffect]);
-
-  useEffect(() => {
-    /*
-      まだ特殊ルール演出中なら
-      カードを消さない。
-    */
-    if (isRuleEffectPlaying) {
-      return;
-    }
-
-    /*
-      8切り・スペ3返しの
-      場流し予約がなければ何もしない。
-    */
-    if (!pendingSpecialClear) {
-      return;
-    }
-
-    const {
-      playerIndex,
-    } = pendingSpecialClear;
-
-    /*
-      ここで初めて場札を消す。
-    */
-    setPlayedCards([]);
-
-    setLastPlayPlayerIndex(null);
-    setConsecutivePasses(0);
-
-    resetTemporaryFieldRules();
-
-    /*
-      場を流したので予約解除。
-    */
-    setPendingSpecialClear(null);
-
-    /*
-      8切り・スペ3返しをした人が
-      まだ手札を持っていれば
-      その人から再開。
-    */
-    if (
-      hands[playerIndex].length > 0
-    ) {
-      setCurrentPlayerIndex(
-        playerIndex,
-      );
-
-      return;
-    }
-
-    /*
-      そのカードで上がった場合は
-      次の生存プレイヤーから。
-    */
-    const nextPlayer =
-      getNextActivePlayerIndex(
-        hands,
-        playerIndex,
-      );
-
-    if (nextPlayer !== null) {
-      setCurrentPlayerIndex(
-        nextPlayer,
-      );
-    }
-  }, [
-    isRuleEffectPlaying,
-    pendingSpecialClear,
-    hands,
-  ]);
-
-  function moveToNextActive(
-    nextHands,
-    playerIndex,
-  ) {
-    const nextPlayer =
-      getNextActivePlayerIndex(
-        nextHands,
-        playerIndex,
-      );
-
-    if (nextPlayer !== null) {
-      setCurrentPlayerIndex(
-        nextPlayer,
-      );
-    }
-  }
-
-  function clearFieldAfterSpecial(
-    cards,
-    playerIndex,
-  ) {
-    /*
-      まだカードは消さない。
-
-      演出中は、特殊ルールを
-      発生させたカードを
-      場に表示したままにする。
-    */
-    setPlayedCards(cards);
-
-    setLastPlayPlayerIndex(
-      playerIndex,
-    );
-
-    setConsecutivePasses(0);
-
-    /*
-      演出終了後に
-      場を流すための予約。
-    */
-    setPendingSpecialClear({
-      playerIndex,
-    });
-  }
-
-  /*
-    1回のカードプレイによる
-    特殊ルールを反映する。
-  */
-  function applyPlayRules({
-    cards,
-    analysis,
-    playerIndex,
-    nextHands,
-    forbiddenFinish,
-    finishEvent,
-  }) {
-    const effects =
-      getPlayEffects(
-        cards,
-        analysis,
-      );
-
-    const spadeThreeReturn =
-      isSingleJoker(playedCards) &&
-      isSpadeThree(cards);
-
-    /*
-      スペ3返しは完全単独表示。
-    */
-    if (spadeThreeReturn) {
-      triggerRuleEvents([
-        ...(finishEvent
-          ? [finishEvent]
-          : []),
-
-        "spadeThree",
-
-        ...(forbiddenFinish
-          ? ["forbiddenFinish"]
-          : []),
-      ]);
-
-      clearFieldAfterSpecial(
-        cards,
-        playerIndex,
-      );
-
-      return;
-    }
-
-    const events = [];
-
-    /*
-      上がり階級は
-      すべての特殊ルールより先に表示。
-    */
-    if (finishEvent) {
-      events.push(
-        finishEvent,
-      );
-    }
-
-    /*
-      革命は場が流れても残る。
-      4枚以上なら毎回反転する。
-    */
-    if (effects.revolution) {
-      setRevolution(
-        (current) => !current,
-      );
-      events.push("revolution");
-    }
-
-    /*
-      8切りがある場合、
-      革命だけは先に成立する。
-
-      縛り・激シバ・11バックは
-      場が即座に流れるため発生させない。
-    */
-    if (effects.eightCut) {
-      events.push("eightCut");
-
-      triggerRuleEvents(events);
-
-      clearFieldAfterSpecial(
-        cards,
-        playerIndex,
-      );
-
-      return;
-    }
-
-    /*
-      シングル限定の縛り・激シバ。
-    */
-    let nextLockedSuit = lockedSuit;
-    let nextGeki = gekiShibari;
-
-    if (
-      analysis.type === "single" &&
-      !isSingleJoker(cards)
-    ) {
-      const candidateSuit =
-        getSingleNaturalSuit(cards);
-
-      const candidateStrength =
-        getSingleNaturalStrength(cards);
-
-      const previousSuit =
-        getSingleNaturalSuit(
-          playedCards,
-        );
-
-      const previousStrength =
-        getSingleNaturalStrength(
-          playedCards,
-        );
-
-      const sameSuit =
-        candidateSuit &&
-        previousSuit &&
-        candidateSuit === previousSuit;
-
-      const consecutive =
-        previousStrength !== null &&
-        candidateStrength !== null &&
-        Math.abs(
-          candidateStrength -
-            previousStrength,
-        ) === 1;
-
-      /*
-        激シバが新しく成立。
-        通常の縛りよりこちらを優先表示。
-      */
-      if (
-        sameSuit &&
-        consecutive &&
-        !gekiShibari
-      ) {
-        nextLockedSuit =
-          candidateSuit;
-        nextGeki = true;
-
-        setLockedSuit(
-          candidateSuit,
-        );
-        setGekiShibari(true);
-        events.push("gekiShibari");
-      } else if (
-        sameSuit &&
-        !lockedSuit
-      ) {
-        nextLockedSuit =
-          candidateSuit;
-
-        setLockedSuit(
-          candidateSuit,
-        );
-        events.push("shibari");
-      }
-
-      setSingleStrengthHistory(
-        (current) => [
-          ...current,
-          candidateStrength,
-        ],
-      );
-    }
-
-    /*
-      Jを含んでいれば11バック。
-      既に11バック中なら
-      二重反転はさせず継続。
-    */
-    if (
-      effects.elevenBack &&
-      !elevenBack
-    ) {
-      setElevenBack(true);
-      events.push("elevenBack");
-    }
-
-    if (forbiddenFinish) {
-      events.push(
-        "forbiddenFinish",
-      );
-    }
-
-    triggerRuleEvents(events);
-
-    /*
-      通常の場更新。
-    */
-    setPlayedCards(cards);
-    setLastPlayPlayerIndex(
-      playerIndex,
-    );
-    setConsecutivePasses(0);
-
-    /*
-      nextLockedSuit / nextGekiは
-      React更新前の説明用変数。
-      状態自体は上で更新済み。
-    */
-    void nextLockedSuit;
-    void nextGeki;
-
-    moveToNextActive(
-      nextHands,
-      playerIndex,
-    );
-  }
 
   function commitPlay({
     playerIndex,
@@ -837,8 +436,7 @@ export default function usePresidentGame({
     setPlayedCards([]);
     setLastPlayPlayerIndex(null);
     setConsecutivePasses(0);
-    setLastRuleEvents([]);
-    setRuleEffectQueue([]);
+    clearRuleEffects();
     resetTemporaryFieldRules();
 
     if (leader !== null) {
@@ -971,24 +569,9 @@ export default function usePresidentGame({
     setPassEffectPlayerIndexes([]);
 
     /*
-      革命を解除。
+      特殊ルールとエフェクトを解除。
     */
-    setRevolution(false);
-
-    /*
-      11バック・縛り・激シバを解除。
-    */
-    setElevenBack(false);
-    setLockedSuit(null);
-    setGekiShibari(false);
-    setSingleStrengthHistory([]);
-
-    /*
-      ルールエフェクトをリセット。
-    */
-    setLastRuleEvents([]);
-    setRuleEffectQueue([]);
-    setPendingSpecialClear(null);
+    resetFieldRules();
 
     /*
       順位記録をリセット。
