@@ -20,6 +20,10 @@ import {
   findGuaranteedFinishPlan,
 } from "../utils/presidentCpuStrategy";
 
+import {
+  chooseHeadsUpPerfectPlay,
+} from "../utils/presidentHeadsUpSolver";
+
 const CPU_THINK_TIME = 700;
 
 const CARD_PLAY_SOUND_SOURCE =
@@ -182,8 +186,70 @@ export default function useCpuTurn({
             ruleContext,
           });
 
+        const activePlayerIndexes =
+          hands
+            .map((playerHand, index) => ({
+              index,
+              cardCount:
+                playerHand.length,
+            }))
+            .filter(
+              ({ cardCount }) =>
+                cardCount > 0,
+            )
+            .map(({ index }) => index);
+
+        const headsUpOpponentIndex =
+          activePlayerIndexes.length === 2
+            ? activePlayerIndexes.find(
+                (index) =>
+                  index !== cpuIndex,
+              )
+            : null;
+
+        const headsUpDecision =
+          headsUpOpponentIndex !== null &&
+          headsUpOpponentIndex !== undefined
+            ? chooseHeadsUpPerfectPlay({
+                ownHand: cpuHand,
+                opponentCardNumbers:
+                  knowledge
+                    ?.remainingOpponentCardNumbers ?? [],
+                opponentCardCount:
+                  hands[
+                    headsUpOpponentIndex
+                  ].length,
+                fieldCards:
+                  ruleContext.fieldCards ?? [],
+                ruleContext,
+              })
+            : null;
+
+        if (
+          headsUpDecision?.type === "pass"
+        ) {
+          handlePassRef.current(
+            cpuIndex,
+          );
+          return;
+        }
+
         let chosenPlay =
-          ruleContext.elevenBack &&
+          headsUpDecision?.type === "play"
+            ? rawLegalCpuPlays.find(
+                (play) =>
+                  play.cardIds.length ===
+                    headsUpDecision.play
+                      .cardIds.length &&
+                  play.cardIds.every(
+                    (cardId) =>
+                      headsUpDecision.play
+                        .cardIds.includes(
+                          cardId,
+                        ),
+                  ),
+              ) ?? null
+            : ruleContext.elevenBack &&
           !ruleContext.revolution
             ? chooseElevenBackThreePlay(
                 legalCpuPlays,

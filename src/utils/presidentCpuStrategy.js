@@ -455,6 +455,152 @@ function isNaturalDeucePair(play) {
 }
 
 /*
+  革命後の残り手札が、低い数字側へ
+  どの程度寄っているかを評価する。
+
+  3～8：革命後に強いのでプラス
+  9   ：中立
+  10～2：革命後に弱いのでマイナス
+
+  同じ低位札が複数あれば、革命後に
+  ペア／トリオとしても強いため少し加点する。
+*/
+function evaluatePostRevolutionHand(cards) {
+  const normalCards = cards.filter(
+    (card) => !isJoker(card),
+  );
+
+  if (normalCards.length === 0) {
+    return {
+      balance: 0,
+      strongCardCount: 0,
+      weakCardCount: 0,
+    };
+  }
+
+  const countByStrength = new Map();
+  let balance = 0;
+  let strongCardCount = 0;
+  let weakCardCount = 0;
+
+  normalCards.forEach((card) => {
+    const strength =
+      getCardStrength(card);
+
+    balance += 9 - strength;
+
+    if (strength <= 8) {
+      strongCardCount += 1;
+    } else if (strength >= 10) {
+      weakCardCount += 1;
+    }
+
+    countByStrength.set(
+      strength,
+      (countByStrength.get(strength) ?? 0) + 1,
+    );
+  });
+
+  countByStrength.forEach(
+    (count, strength) => {
+      if (
+        count >= 2 &&
+        strength <= 8
+      ) {
+        balance += count - 1;
+      }
+
+      if (
+        count >= 2 &&
+        strength >= 10
+      ) {
+        balance -= count - 1;
+      }
+    },
+  );
+
+  return {
+    balance,
+    strongCardCount,
+    weakCardCount,
+  };
+}
+
+function chooseStrategicRevolutionLead({
+  hand,
+  legalPlays,
+  handIndexMap,
+}) {
+  const revolutionCandidates =
+    legalPlays
+      .filter(
+        (play) =>
+          play.cards.length >= 4 &&
+          !containsJoker(play),
+      )
+      .map((play) => {
+        const remainingCards =
+          getRemainingCards(
+            hand,
+            play,
+          );
+
+        return {
+          play,
+          remainingCards,
+          evaluation:
+            evaluatePostRevolutionHand(
+              remainingCards,
+            ),
+        };
+      })
+      .filter(({ remainingCards, evaluation }) =>
+        remainingCards.length > 0 &&
+        evaluation.balance > 0 &&
+        evaluation.strongCardCount >=
+          evaluation.weakCardCount,
+      );
+
+  return revolutionCandidates
+    .sort((a, b) => {
+      if (
+        a.evaluation.balance !==
+        b.evaluation.balance
+      ) {
+        return (
+          b.evaluation.balance -
+          a.evaluation.balance
+        );
+      }
+
+      if (
+        a.evaluation.strongCardCount !==
+        b.evaluation.strongCardCount
+      ) {
+        return (
+          b.evaluation.strongCardCount -
+          a.evaluation.strongCardCount
+        );
+      }
+
+      return (
+        Math.min(
+          ...a.play.cards.map(
+            (card) =>
+              handIndexMap.get(card.id) ?? 99,
+          ),
+        ) -
+        Math.min(
+          ...b.play.cards.map(
+            (card) =>
+              handIndexMap.get(card.id) ?? 99,
+          ),
+        )
+      );
+    })[0]?.play ?? null;
+}
+
+/*
   イレブンバック中の単独3。
 
   革命＋イレブンバックでは強弱が通常へ戻るため、
@@ -585,6 +731,23 @@ function triggersElevenBack(play) {
     (option) =>
       option.startStrength <= 11 &&
       option.endStrength >= 11,
+  );
+}
+
+/*
+  上がりラッシュで最初に試す、
+  8を含まない3枚のイレブンバック札。
+
+  JJJ・9TJ・TJQ・JQKなどが対象。
+  4枚以上の革命札は対象外。
+*/
+function isWeakThreeCardElevenBack(
+  play,
+) {
+  return (
+    play.cards.length === 3 &&
+    triggersElevenBack(play) &&
+    !isEightCutPlay(play)
   );
 }
 
@@ -750,6 +913,17 @@ function getRushControlRisk({
   */
   if (isEightCutPlay(play)) {
     return -100_000;
+  }
+
+  /*
+    3枚のJ入り勝負手は、
+    イレブンバックによって返されやすい。
+
+    通らない可能性が高いため、
+    ラッシュの最初に試す。
+  */
+  if (isWeakThreeCardElevenBack(play)) {
+    return 100_000;
   }
 
   if (
@@ -928,6 +1102,74 @@ export function findFinishRushPlan({
     };
   }
 
+  function isPlannedJokerRevolution({
+    play,
+    remainingCards,
+    context,
+  }) {
+    if (
+      play.cards.length < 4 ||
+      !containsJoker(play)
+    ) {
+      return true;
+    }
+
+    const nextCards = getRemainingCards(
+      remainingCards,
+      play,
+    );
+
+    /*
+      Jokerを含んだまま上がるのは禁止。
+    */
+    if (nextCards.length === 0) {
+      return false;
+    }
+
+    const nextContext =
+      getContextAfterPlay(
+        context,
+        play,
+      );
+
+    const nextContextPlays =
+      allValidPlays.map(
+        (candidate) =>
+          resolvePlayForContext(
+            candidate,
+            nextContext,
+          ),
+      );
+
+    /*
+      革命直後に残り全体を出せるなら、
+      明確な上がり手順なので使用してよい。
+    */
+    const directTail = findWholeHandPlay({
+      plays: nextContextPlays,
+      cards: nextCards,
+    });
+
+    if (directTail) {
+      return true;
+    }
+
+    /*
+      それ以外は、革命後の残り手札が
+      明確に低位札側へ寄っている場合だけ許可。
+    */
+    const evaluation =
+      evaluatePostRevolutionHand(
+        nextCards,
+      );
+
+    return (
+      evaluation.balance > 0 &&
+      evaluation.strongCardCount >=
+        evaluation.weakCardCount
+    );
+  }
+
   function collectPlans(
     remainingCards,
     candidatePlays,
@@ -990,6 +1232,12 @@ export function findFinishRushPlan({
             play,
             knowledge,
             ruleContext:
+              simulatedContext,
+          }) &&
+          isPlannedJokerRevolution({
+            play,
+            remainingCards,
+            context:
               simulatedContext,
           }),
       );
@@ -2219,6 +2467,23 @@ export function choosePresidentCpuPlay({
     ordinaryPlays;
 
   if (isFieldEmpty(fieldPlay)) {
+    if (
+      !ruleContext.revolution &&
+      !ruleContext.elevenBack
+    ) {
+      const strategicRevolution =
+        chooseStrategicRevolutionLead({
+          hand,
+          legalPlays:
+            unrestrictedOrdinaryPlays,
+          handIndexMap,
+        });
+
+      if (strategicRevolution) {
+        return strategicRevolution;
+      }
+    }
+
     /*
       上がりラッシュがない通常の親番では、
       Jokerを除いた手札全体を役割へ分割して
