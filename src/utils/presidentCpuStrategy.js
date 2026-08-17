@@ -3,6 +3,7 @@ import {
 } from "./cardUtils";
 
 import {
+  analyzePlay,
   getGekiRequiredStrength,
 } from "./presidentRules";
 
@@ -442,6 +443,48 @@ function isSingleRank(play, rank) {
   );
 }
 
+function isNaturalDeucePair(play) {
+  return (
+    play.analysis.type === "pair" &&
+    play.cards.length === 2 &&
+    !containsJoker(play) &&
+    play.cards.every(
+      (card) => card.rank === 2,
+    )
+  );
+}
+
+/*
+  イレブンバック中の単独3。
+
+  革命＋イレブンバックでは強弱が通常へ戻るため、
+  その場合は最優先にしない。
+*/
+export function chooseElevenBackThreePlay(
+  legalPlays,
+) {
+  if (!Array.isArray(legalPlays)) {
+    return null;
+  }
+
+  return [...legalPlays]
+    .filter((play) =>
+      isSingleRank(play, 3),
+    )
+    .sort((a, b) => {
+      const aSpade =
+        a.cards[0].suit === "spades";
+      const bSpade =
+        b.cards[0].suit === "spades";
+
+      if (aSpade !== bSpade) {
+        return aSpade ? 1 : -1;
+      }
+
+      return 0;
+    })[0] ?? null;
+}
+
 function containsJoker(play) {
   return play.cards.some(isJoker);
 }
@@ -749,10 +792,6 @@ function getRushControlRisk({
           play.analysis.strength) *
         100;
 
-  if (containsJoker(play)) {
-    risk -= 20_000;
-  }
-
   const typeRisk = {
     single: 3_000,
     pair: 2_000,
@@ -841,8 +880,53 @@ export function findFinishRushPlan({
   knowledge,
   ruleContext,
 }) {
-  const MAX_CONTROL_STEPS = 3;
+  /*
+    KKK → 2 → 革命 → 444 → 3 のような
+    革命をまたぐラッシュも探索対象にする。
+  */
+  const MAX_CONTROL_STEPS = 5;
   const MAX_PLAN_COUNT = 5_000;
+
+  function resolvePlayForContext(
+    play,
+    context,
+  ) {
+    return {
+      ...play,
+      analysis: analyzePlay(
+        play.cards,
+        context,
+      ),
+    };
+  }
+
+  function getContextAfterPlay(
+    context,
+    play,
+  ) {
+    return {
+      ...context,
+
+      /*
+        4枚以上を出した瞬間から
+        以後のラッシュ評価も反転する。
+      */
+      revolution:
+        play.cards.length >= 4
+          ? !context.revolution
+          : context.revolution,
+
+      /*
+        1手が通って親へ戻る前提なので、
+        一時ルールは次の親番では解除済み。
+      */
+      elevenBack: false,
+      lockedSuit: null,
+      gekiShibari: false,
+      singleStrengthHistory: [],
+      fieldCards: [],
+    };
+  }
 
   function collectPlans(
     remainingCards,
@@ -851,13 +935,22 @@ export function findFinishRushPlan({
     maxDepth,
     prefix,
     plans,
+    simulatedContext,
   ) {
     if (plans.length >= MAX_PLAN_COUNT) {
       return;
     }
 
+    const contextualAllPlays =
+      allValidPlays.map((play) =>
+        resolvePlayForContext(
+          play,
+          simulatedContext,
+        ),
+      );
+
     const finalPlay = findWholeHandPlay({
-      plays: allValidPlays,
+      plays: contextualAllPlays,
       cards: remainingCards,
     });
 
@@ -877,8 +970,16 @@ export function findFinishRushPlan({
       remainingCards.map((card) => card.id),
     );
 
+    const contextualCandidates =
+      candidatePlays.map((play) =>
+        resolvePlayForContext(
+          play,
+          simulatedContext,
+        ),
+      );
+
     const controls =
-      candidatePlays.filter(
+      contextualCandidates.filter(
         (play) =>
           play.cards.length <
             remainingCards.length &&
@@ -888,7 +989,8 @@ export function findFinishRushPlan({
           isRushControlPlay({
             play,
             knowledge,
-            ruleContext,
+            ruleContext:
+              simulatedContext,
           }),
       );
 
@@ -905,6 +1007,10 @@ export function findFinishRushPlan({
         maxDepth,
         [...prefix, controlPlay],
         plans,
+        getContextAfterPlay(
+          simulatedContext,
+          controlPlay,
+        ),
       );
 
       if (plans.length >= MAX_PLAN_COUNT) {
@@ -913,34 +1019,166 @@ export function findFinishRushPlan({
     }
   }
 
-  function getRisk(play) {
+  function getRisk(
+    play,
+    context = ruleContext,
+  ) {
+    const contextualPlay =
+      resolvePlayForContext(
+        play,
+        context,
+      );
+
     return getRushControlRisk({
-      play,
+      play: contextualPlay,
       knowledge,
-      ruleContext,
+      ruleContext: context,
     });
   }
 
-  function orderControlPlays(controls) {
+  function orderByRisk(
+    controls,
+    context,
+  ) {
     const byLowPassChance =
-      (a, b) => getRisk(b) - getRisk(a);
+      (a, b) =>
+        getRisk(b, context) -
+        getRisk(a, context);
 
-    if (isFieldEmpty(fieldPlay)) {
-      return [...controls].sort(
-        byLowPassChance,
+    return [...controls].sort(
+      byLowPassChance,
+    );
+  }
+
+  function isStrongerAfterRevolution(
+    play,
+    context,
+  ) {
+    const before =
+      resolvePlayForContext(
+        play,
+        context,
       );
+
+    const afterContext = {
+      ...context,
+      revolution:
+        !context.revolution,
+      elevenBack: false,
+    };
+
+    const after =
+      resolvePlayForContext(
+        play,
+        afterContext,
+      );
+
+    const beforeReverse =
+      isEffectiveReverse(context);
+
+    const afterReverse =
+      isEffectiveReverse(afterContext);
+
+    const beforePower = beforeReverse
+      ? 18 - before.analysis.strength
+      : before.analysis.strength;
+
+    const afterPower = afterReverse
+      ? 18 - after.analysis.strength
+      : after.analysis.strength;
+
+    return afterPower > beforePower;
+  }
+
+  function orderControlPlays(controls) {
+    const fixedControls =
+      isFieldEmpty(fieldPlay)
+        ? []
+        : controls.slice(0, 1);
+
+    const reorderableControls =
+      isFieldEmpty(fieldPlay)
+        ? controls
+        : controls.slice(1);
+
+    let currentContext = {
+      ...ruleContext,
+    };
+
+    fixedControls.forEach((play) => {
+      currentContext =
+        getContextAfterPlay(
+          currentContext,
+          play,
+        );
+    });
+
+    const revolutionIndex =
+      reorderableControls.findIndex(
+        (play) =>
+          play.cards.length >= 4,
+      );
+
+    if (revolutionIndex === -1) {
+      return [
+        ...fixedControls,
+        ...orderByRisk(
+          reorderableControls,
+          currentContext,
+        ),
+      ];
     }
 
+    const revolutionPlay =
+      reorderableControls[
+        revolutionIndex
+      ];
+
+    const otherControls =
+      reorderableControls.filter(
+        (_, index) =>
+          index !== revolutionIndex,
+      );
+
     /*
-      場に札がある時は、最初の1組だけが
-      現在の場に対する合法手として選ばれている。
-      そのため先頭は固定し、2組目以降だけ並べ替える。
+      革命後に強くなる札は革命の後へ。
+
+      例：444・単独3。
+      革命前に強いKKK・単独2は前へ置く。
     */
+    const beforeRevolution = [];
+    const afterRevolution = [];
+
+    otherControls.forEach((play) => {
+      if (
+        isStrongerAfterRevolution(
+          play,
+          currentContext,
+        )
+      ) {
+        afterRevolution.push(play);
+      } else {
+        beforeRevolution.push(play);
+      }
+    });
+
+    const reversedContext =
+      getContextAfterPlay(
+        currentContext,
+        revolutionPlay,
+      );
+
     return [
-      controls[0],
-      ...controls
-        .slice(1)
-        .sort(byLowPassChance),
+      ...fixedControls,
+      ...orderByRisk(
+        beforeRevolution,
+        currentContext,
+      ),
+      revolutionPlay,
+      ...orderByRisk(
+        afterRevolution,
+        reversedContext,
+      ),
     ];
   }
 
@@ -957,13 +1195,34 @@ export function findFinishRushPlan({
     const normalizedA = normalizePlan(a);
     const normalizedB = normalizePlan(b);
 
-    const finalRiskA = getRisk(
-      normalizedA.at(-1),
-    );
+    function getContextualRisks(plan) {
+      let context = {
+        ...ruleContext,
+      };
 
-    const finalRiskB = getRisk(
-      normalizedB.at(-1),
-    );
+      return plan.map((play) => {
+        const risk = getRisk(
+          play,
+          context,
+        );
+
+        context = getContextAfterPlay(
+          context,
+          play,
+        );
+
+        return risk;
+      });
+    }
+
+    const risksA =
+      getContextualRisks(normalizedA);
+
+    const risksB =
+      getContextualRisks(normalizedB);
+
+    const finalRiskA = risksA.at(-1);
+    const finalRiskB = risksB.at(-1);
 
     /*
       最も通りにくい組を最後へ残す。
@@ -985,8 +1244,8 @@ export function findFinishRushPlan({
       index += 1
     ) {
       const riskDifference =
-        getRisk(controlsB[index]) -
-        getRisk(controlsA[index]);
+        risksB[index] -
+        risksA[index];
 
       if (riskDifference !== 0) {
         return riskDifference;
@@ -1017,6 +1276,9 @@ export function findFinishRushPlan({
       maxDepth,
       [],
       plans,
+      {
+        ...ruleContext,
+      },
     );
 
     const rushPlans = plans.filter(
@@ -1887,6 +2149,20 @@ export function choosePresidentCpuPlay({
   const handIndexMap =
     getHandIndexMap(hand);
 
+  if (
+    ruleContext.elevenBack &&
+    !ruleContext.revolution
+  ) {
+    const elevenBackThree =
+      chooseElevenBackThreePlay(
+        legalPlays,
+      );
+
+    if (elevenBackThree) {
+      return elevenBackThree;
+    }
+  }
+
   const reverse =
     isEffectiveReverse(ruleContext);
 
@@ -1901,12 +2177,34 @@ export function choosePresidentCpuPlay({
       (play) => !containsJoker(play),
     );
 
-  const ordinaryPlays =
+  const unrestrictedOrdinaryPlays =
     jokerFreePlays.length > 0
       ? jokerFreePlays
       : hand.length === 1
         ? legalPlays
         : [];
+
+  /*
+    通常時の22は強力な親取り札なので、
+    バラバラの手札から安易に消費しない。
+
+    ・通常思考では他の札を処理する
+    ・22しか手札に残っていなければ出せる
+    ・上がりラッシュ／確定上がりはこの処理より
+      先に判定されるため、必要なら使用できる
+    ・革命／11バックによる反転中は温存しない
+  */
+  const shouldPreserveDeucePair =
+    !reverse &&
+    hand.length > 2;
+
+  const ordinaryPlays =
+    shouldPreserveDeucePair
+      ? unrestrictedOrdinaryPlays.filter(
+          (play) =>
+            !isNaturalDeucePair(play),
+        )
+      : unrestrictedOrdinaryPlays;
 
   const hasLeadTakingPlay =
     allValidPlays.some((play) =>
@@ -2372,11 +2670,19 @@ export function choosePresidentCpuPlay({
           (play) =>
             play.analysis.type !==
               "single" &&
-            (isThreeCardAttack(play) ||
+            (
               isHighGroupPlay(
                 play,
                 ruleContext,
-              )),
+              ) ||
+              isEffectiveZeroGroupPlay({
+                play,
+                knowledge,
+                ruleContext,
+                allowSpeculativeThreeCard:
+                  false,
+              })
+            ),
         )
       : ordinaryPlays;
 

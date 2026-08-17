@@ -13,6 +13,7 @@ import {
 } from "../utils/gameAudio";
 
 import {
+  chooseElevenBackThreePlay,
   choosePresidentCpuPlay,
   filterNonBreakingSingleResponses,
   findFinishRushPlan,
@@ -181,12 +182,19 @@ export default function useCpuTurn({
             ruleContext,
           });
 
+        let chosenPlay =
+          ruleContext.elevenBack &&
+          !ruleContext.revolution
+            ? chooseElevenBackThreePlay(
+                legalCpuPlays,
+              )
+            : null;
+
         const pendingPlan =
           guaranteedPlanRef.current;
 
-        let chosenPlay = null;
-
         if (
+          !chosenPlay &&
           pendingPlan.playerIndex ===
             cpuIndex &&
           pendingPlan.remainingSteps
