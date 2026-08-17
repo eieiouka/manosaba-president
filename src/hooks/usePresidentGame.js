@@ -267,8 +267,19 @@ export default function usePresidentGame({
 
   const fieldPlay =
     useMemo(
-      () => analyzePlay(playedCards),
-      [playedCards],
+      () =>
+        analyzePlay(
+          playedCards,
+          {
+            revolution,
+            elevenBack,
+          },
+        ),
+      [
+        playedCards,
+        revolution,
+        elevenBack,
+      ],
     );
 
   const selectedCards =
@@ -279,7 +290,13 @@ export default function usePresidentGame({
     );
 
   const selectedPlay =
-    analyzePlay(selectedCards);
+    analyzePlay(
+      selectedCards,
+      {
+        revolution,
+        elevenBack,
+      },
+    );
 
   const ruleContext =
     useMemo(
@@ -303,8 +320,19 @@ export default function usePresidentGame({
 
   const allPlayerPlays =
     useMemo(
-      () => getAllValidPlays(hand),
-      [hand],
+      () =>
+        getAllValidPlays(
+          hand,
+          {
+            revolution,
+            elevenBack,
+          },
+        ),
+      [
+        hand,
+        revolution,
+        elevenBack,
+      ],
     );
 
   const legalPlayerPlays =
@@ -516,7 +544,13 @@ export default function usePresidentGame({
           (card) => card.id,
         ),
         analysis:
-          analyzePlay(cardsToPlay),
+          analyzePlay(
+            cardsToPlay,
+            {
+              revolution,
+              elevenBack,
+            },
+          ),
       },
     });
 

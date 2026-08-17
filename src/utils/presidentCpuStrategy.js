@@ -2,6 +2,14 @@ import {
   getCardStrength,
 } from "./cardUtils";
 
+import {
+  getGekiRequiredStrength,
+} from "./presidentRules";
+
+import {
+  chooseRoleBasedLead,
+} from "./presidentCpuRoles";
+
 function isJoker(card) {
   return Boolean(
     card?.isJoker ||
@@ -170,6 +178,240 @@ function getProtectedMeldCardIds(
   );
 }
 
+/*
+  激シバの次札を公開情報と照合するための
+  card number変換。
+*/
+const SUIT_NUMBER_OFFSET = {
+  spades: 0,
+  hearts: 13,
+  diamonds: 26,
+  clubs: 39,
+};
+
+function strengthToRank(strength) {
+  if (strength === 14) {
+    return 1;
+  }
+
+  if (strength === 15) {
+    return 2;
+  }
+
+  return strength;
+}
+
+function getCardNumberBySuitAndStrength(
+  suit,
+  strength,
+) {
+  const offset = SUIT_NUMBER_OFFSET[suit];
+
+  if (offset === undefined) {
+    return -1;
+  }
+
+  return offset + strengthToRank(strength);
+}
+
+function securesLeadThroughGekiShibari({
+  play,
+  hand,
+  fieldPlay,
+  knowledge,
+  ruleContext,
+}) {
+  if (
+    play.analysis.type !== "single" ||
+    containsJoker(play) ||
+    fieldPlay?.type !== "single"
+  ) {
+    return false;
+  }
+
+  const card = play.cards[0];
+  const fieldCard =
+    ruleContext.fieldCards?.[0];
+
+  if (
+    !fieldCard ||
+    isJoker(fieldCard) ||
+    card.suit !== fieldCard.suit
+  ) {
+    return false;
+  }
+
+  const fieldStrength =
+    fieldPlay.strength;
+
+  const candidateStrength =
+    play.analysis.strength;
+
+  const startsGekiShibari =
+    Math.abs(
+      candidateStrength - fieldStrength,
+    ) === 1;
+
+  if (
+    !ruleContext.gekiShibari &&
+    !startsGekiShibari
+  ) {
+    return false;
+  }
+
+  const nextStrength =
+    getGekiRequiredStrength({
+      fieldStrength: candidateStrength,
+      usedStrengths: [
+        ...(ruleContext
+          .singleStrengthHistory ?? []),
+        candidateStrength,
+      ],
+      revolution:
+        Boolean(ruleContext.revolution),
+      elevenBack:
+        Boolean(ruleContext.elevenBack),
+    });
+
+  /*
+    強弱方向の端まで到達していれば、
+    次に出せる札がないため親を取れる。
+  */
+  if (nextStrength === null) {
+    return true;
+  }
+
+  /*
+    次の指定札を自分が持っていれば、
+    他の3人はその札を持てない。
+  */
+  const ownsNextCard = hand.some(
+    (handCard) =>
+      handCard.id !== card.id &&
+      !isJoker(handCard) &&
+      handCard.suit === card.suit &&
+      getCardStrength(handCard) ===
+        nextStrength,
+  );
+
+  if (ownsNextCard) {
+    return true;
+  }
+
+  /*
+    次の指定札が既に場へ出ている場合も、
+    相手の残存候補には含まれない。
+  */
+  const nextCardNumber =
+    getCardNumberBySuitAndStrength(
+      card.suit,
+      nextStrength,
+    );
+
+  const remainingOpponentNumbers =
+    knowledge
+      ?.remainingOpponentCardNumbers;
+
+  return (
+    Array.isArray(
+      remainingOpponentNumbers,
+    ) &&
+    !remainingOpponentNumbers.includes(
+      nextCardNumber,
+    )
+  );
+}
+
+function canBreakProtectedMeldAsSingle({
+  play,
+  hand,
+  fieldPlay,
+  knowledge,
+  ruleContext,
+}) {
+  if (isEightCutPlay(play)) {
+    return true;
+  }
+
+  if (
+    isHighSingleControl(
+      play,
+      ruleContext,
+    )
+  ) {
+    return true;
+  }
+
+  if (
+    isKnowledgeBasedSingleControl({
+      play,
+      knowledge,
+      ruleContext,
+    })
+  ) {
+    return true;
+  }
+
+  return securesLeadThroughGekiShibari({
+    play,
+    hand,
+    fieldPlay,
+    knowledge,
+    ruleContext,
+  });
+}
+
+/*
+  CPUの全思考に渡す前に、子のシングル場で
+  組を不当に崩す候補を取り除く。
+
+  choosePresidentCpuPlayだけでなく、
+  確定上がり／上がりラッシュにも適用するため
+  useCpuTurnから呼び出す。
+*/
+export function filterNonBreakingSingleResponses({
+  hand,
+  allValidPlays,
+  legalPlays,
+  fieldPlay,
+  knowledge,
+  ruleContext,
+}) {
+  if (fieldPlay?.type !== "single") {
+    return legalPlays;
+  }
+
+  const protectedMeldCardIds =
+    getProtectedMeldCardIds(
+      allValidPlays,
+    );
+
+  return legalPlays.filter((play) => {
+    if (
+      play.analysis.type !== "single" ||
+      containsJoker(play)
+    ) {
+      return true;
+    }
+
+    const cardId = play.cards[0].id;
+
+    if (
+      !protectedMeldCardIds.has(cardId)
+    ) {
+      return true;
+    }
+
+    return canBreakProtectedMeldAsSingle({
+      play,
+      hand,
+      fieldPlay,
+      knowledge,
+      ruleContext,
+    });
+  });
+}
+
 function isDisposableSinglePlay(
   play,
   disposableSingleIds,
@@ -202,6 +444,27 @@ function isSingleRank(play, rank) {
 
 function containsJoker(play) {
   return play.cards.some(isJoker);
+}
+
+function isSpadeThreeUnavailableToOpponents(
+  knowledge,
+) {
+  const ownCardNumbers =
+    knowledge?.ownCardNumbers ?? [];
+
+  const publicPlayedCardNumbers =
+    knowledge?.publicPlayedCardNumbers ?? [];
+
+  /*
+    card number 3 = スペード3。
+
+    公開済み、または自分自身が持っていれば、
+    相手はスペ3返しをできない。
+  */
+  return (
+    ownCardNumbers.includes(3) ||
+    publicPlayedCardNumbers.includes(3)
+  );
 }
 
 function hasSameCardIds(
@@ -435,8 +698,15 @@ function getRushControlRisk({
   knowledge,
   ruleContext,
 }) {
+  /*
+    数値が大きいほど、
+    「通る可能性が低いので先に試す」。
+
+    8切りや絶対札は確実に通るため、
+    ラッシュの後ろへ温存する。
+  */
   if (isEightCutPlay(play)) {
-    return -10_000;
+    return -100_000;
   }
 
   if (
@@ -446,24 +716,73 @@ function getRushControlRisk({
       ruleContext,
     })
   ) {
-    return -5_000;
+    return -50_000;
   }
 
-  let risk = 0;
+  /*
+    2・反転中の3・公開情報上返せないAなどは
+    確実性が高いのでラッシュの後ろへ残す。
+
+    TTT等の不確実な3枚組を先に試す。
+  */
+  if (
+    isHighSingleControl(
+      play,
+      ruleContext,
+    ) ||
+    isKnowledgeBasedSingleControl({
+      play,
+      knowledge,
+      ruleContext,
+    })
+  ) {
+    return -40_000;
+  }
+
+  const reverse =
+    isEffectiveReverse(ruleContext);
+
+  let risk =
+    reverse
+      ? play.analysis.strength * 100
+      : (16 -
+          play.analysis.strength) *
+        100;
 
   if (containsJoker(play)) {
-    risk -= 1_000;
+    risk -= 20_000;
   }
 
-  if (isThreeCardAttack(play)) {
-    risk += 800;
-  }
+  const typeRisk = {
+    single: 3_000,
+    pair: 2_000,
+    trio: 1_000,
+    straight: 1_000,
+    quads: 500,
+  };
 
-  if (play.analysis.type === "pair") {
-    risk += 400;
-  }
+  risk +=
+    typeRisk[play.analysis.type] ?? 0;
 
-  risk -= play.analysis.strength * 10;
+  /*
+    同程度なら枚数が少なく、
+    相手に返されやすい組を先に試す。
+  */
+  risk +=
+    (4 - play.cards.length) * 50;
+
+  if (
+    isHighThreeCardControl(
+      play,
+      ruleContext,
+    )
+  ) {
+    /*
+      TTT以上・QKA以上は比較的通りやすい。
+      567のような弱い3枚組を先にする。
+    */
+    risk -= 500;
+  }
 
   return risk;
 }
@@ -473,16 +792,12 @@ function isRushControlPlay({
   knowledge,
   ruleContext,
 }) {
-  if (isEightCutPlay(play)) {
-    return true;
-  }
-
-  if (triggersElevenBack(play)) {
-    return false;
-  }
-
+  /*
+    8切り・最強札・2などの
+    制圧手はラッシュに使える。
+  */
   if (
-    isAbsolutelyUnbeatable({
+    isEffectiveZeroGroupPlay({
       play,
       knowledge,
       ruleContext,
@@ -492,25 +807,23 @@ function isRushControlPlay({
   }
 
   /*
-    Jokerを含むだけの不確定な組札は、
-    ラッシュ候補にしない。
-
-    Jokerを使えるのは上の
-    「絶対に返されない」判定を通った時か、
-    8切りで確実に場が流れる時だけ。
+    567や777のような3枚組は、
+    強くなくても「通れば勝ち」の
+    ワンチャン勝負手にする。
   */
-  if (containsJoker(play)) {
-    return false;
-  }
-
   if (isThreeCardAttack(play)) {
     return true;
   }
 
-  return (
-    play.analysis.type === "pair" &&
-    play.analysis.strength >= 12
-  );
+  /*
+    4枚以上は革命を伴うため、
+    勝負手として扱う。
+  */
+  if (play.cards.length >= 4) {
+    return true;
+  }
+
+  return false;
 }
 
 /*
@@ -524,47 +837,48 @@ export function findFinishRushPlan({
   hand,
   allValidPlays,
   legalPlays,
+  fieldPlay,
   knowledge,
   ruleContext,
 }) {
   const MAX_CONTROL_STEPS = 3;
-  const visited = new Set();
+  const MAX_PLAN_COUNT = 5_000;
 
-  function search(
+  function collectPlans(
     remainingCards,
     candidatePlays,
     depth,
+    maxDepth,
+    prefix,
+    plans,
   ) {
+    if (plans.length >= MAX_PLAN_COUNT) {
+      return;
+    }
+
     const finalPlay = findWholeHandPlay({
       plays: allValidPlays,
       cards: remainingCards,
     });
 
     if (finalPlay) {
-      return [finalPlay];
+      plans.push([
+        ...prefix,
+        finalPlay,
+      ]);
+      return;
     }
 
-    if (depth >= MAX_CONTROL_STEPS) {
-      return null;
+    if (depth >= maxDepth) {
+      return;
     }
-
-    const stateKey = remainingCards
-      .map((card) => card.id)
-      .sort()
-      .join("|");
-
-    if (visited.has(`${depth}:${stateKey}`)) {
-      return null;
-    }
-
-    visited.add(`${depth}:${stateKey}`);
 
     const remainingIds = new Set(
       remainingCards.map((card) => card.id),
     );
 
-    const controls = candidatePlays
-      .filter(
+    const controls =
+      candidatePlays.filter(
         (play) =>
           play.cards.length <
             remainingCards.length &&
@@ -576,19 +890,6 @@ export function findFinishRushPlan({
             knowledge,
             ruleContext,
           }),
-      )
-      .sort(
-        (a, b) =>
-          getRushControlRisk({
-            play: b,
-            knowledge,
-            ruleContext,
-          }) -
-          getRushControlRisk({
-            play: a,
-            knowledge,
-            ruleContext,
-          }),
       );
 
     for (const controlPlay of controls) {
@@ -597,29 +898,140 @@ export function findFinishRushPlan({
         controlPlay,
       );
 
-      const tail = search(
+      collectPlans(
         nextCards,
         allValidPlays,
         depth + 1,
+        maxDepth,
+        [...prefix, controlPlay],
+        plans,
       );
 
-      if (tail) {
-        return [controlPlay, ...tail];
+      if (plans.length >= MAX_PLAN_COUNT) {
+        break;
+      }
+    }
+  }
+
+  function getRisk(play) {
+    return getRushControlRisk({
+      play,
+      knowledge,
+      ruleContext,
+    });
+  }
+
+  function orderControlPlays(controls) {
+    const byLowPassChance =
+      (a, b) => getRisk(b) - getRisk(a);
+
+    if (isFieldEmpty(fieldPlay)) {
+      return [...controls].sort(
+        byLowPassChance,
+      );
+    }
+
+    /*
+      場に札がある時は、最初の1組だけが
+      現在の場に対する合法手として選ばれている。
+      そのため先頭は固定し、2組目以降だけ並べ替える。
+    */
+    return [
+      controls[0],
+      ...controls
+        .slice(1)
+        .sort(byLowPassChance),
+    ];
+  }
+
+  function normalizePlan(plan) {
+    const finalPlay = plan.at(-1);
+    const controls = orderControlPlays(
+      plan.slice(0, -1),
+    );
+
+    return [...controls, finalPlay];
+  }
+
+  function comparePlans(a, b) {
+    const normalizedA = normalizePlan(a);
+    const normalizedB = normalizePlan(b);
+
+    const finalRiskA = getRisk(
+      normalizedA.at(-1),
+    );
+
+    const finalRiskB = getRisk(
+      normalizedB.at(-1),
+    );
+
+    /*
+      最も通りにくい組を最後へ残す。
+      最後は親なので、弱い55でも問題なく上がれる。
+    */
+    if (finalRiskA !== finalRiskB) {
+      return finalRiskB - finalRiskA;
+    }
+
+    const controlsA =
+      normalizedA.slice(0, -1);
+
+    const controlsB =
+      normalizedB.slice(0, -1);
+
+    for (
+      let index = 0;
+      index < controlsA.length;
+      index += 1
+    ) {
+      const riskDifference =
+        getRisk(controlsB[index]) -
+        getRisk(controlsA[index]);
+
+      if (riskDifference !== 0) {
+        return riskDifference;
       }
     }
 
-    return null;
+    return 0;
   }
 
-  const plan = search(
-    hand,
-    legalPlays,
-    0,
-  );
+  /*
+    まず「勝負手1組＋最後の1組」を探す。
+    見つからない場合だけ2組、3組と増やす。
 
-  return plan && plan.length >= 2
-    ? plan
-    : null;
+    これにより、567＋AAAを
+    5→6→7→AAAのように細かく崩さない。
+  */
+  for (
+    let maxDepth = 1;
+    maxDepth <= MAX_CONTROL_STEPS;
+    maxDepth += 1
+  ) {
+    const plans = [];
+
+    collectPlans(
+      hand,
+      legalPlays,
+      0,
+      maxDepth,
+      [],
+      plans,
+    );
+
+    const rushPlans = plans.filter(
+      (plan) => plan.length >= 2,
+    );
+
+    if (rushPlans.length > 0) {
+      const bestPlan = [...rushPlans]
+        .sort(comparePlans)[0];
+
+      return normalizePlan(bestPlan);
+    }
+  }
+
+  return null;
 }
 
 function chooseByHandOrder({
@@ -757,6 +1169,88 @@ function canPossibleSameRankBeat({
   }
 
   return false;
+}
+
+/*
+  Jokerを使わず、自然札だけで
+  同枚数の上位組を作れるか。
+
+  ペアの実戦的な切り札判定に使う。
+*/
+function canPossibleNaturalSameRankBeat({
+  play,
+  remainingNumbers,
+  reverse,
+}) {
+  const requiredCount =
+    play.analysis.count;
+
+  const countByStrength = new Map();
+
+  remainingNumbers.forEach((number) => {
+    const card = numberToCardData(number);
+
+    if (card.isJoker) {
+      return;
+    }
+
+    countByStrength.set(
+      card.strength,
+      (countByStrength.get(
+        card.strength,
+      ) ?? 0) + 1,
+    );
+  });
+
+  for (
+    let strength = 3;
+    strength <= 15;
+    strength += 1
+  ) {
+    if (
+      !canStrengthBeat({
+        candidateStrength: strength,
+        fieldStrength:
+          play.analysis.strength,
+        reverse,
+      })
+    ) {
+      continue;
+    }
+
+    if (
+      (countByStrength.get(strength) ??
+        0) >= requiredCount
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function isPracticalPairControl({
+  play,
+  knowledge,
+  ruleContext,
+}) {
+  if (
+    play.analysis.type !== "pair" ||
+    !knowledge
+  ) {
+    return false;
+  }
+
+  const remainingNumbers =
+    knowledge
+      .remainingOpponentCardNumbers ?? [];
+
+  return !canPossibleNaturalSameRankBeat({
+    play,
+    remainingNumbers,
+    reverse:
+      isEffectiveReverse(ruleContext),
+  });
 }
 
 function canPossibleStraightBeat({
@@ -900,6 +1394,484 @@ function isHighGroupPlay(
     : play.analysis.strength >= 12;
 }
 
+/*
+  通れば親を取り返せると見なす
+  3枚の勝負手。
+
+  通常：
+    TTT以上 / QKA以上
+
+  革命・11バックによる反転中：
+    888以下 / 567以下
+*/
+function isHighThreeCardControl(
+  play,
+  ruleContext,
+) {
+  if (!isThreeCardAttack(play)) {
+    return false;
+  }
+
+  const reverse =
+    isEffectiveReverse(ruleContext);
+
+  if (play.analysis.type === "trio") {
+    return reverse
+      ? play.analysis.strength <= 8
+      : play.analysis.strength >= 10;
+  }
+
+  return reverse
+    ? play.analysis.strength <= 7
+    : play.analysis.strength >= 14;
+}
+
+/*
+  通常時の2、反転中の3。
+  Jokerに返される可能性はあるが、
+  上がりラッシュでは勝負手として0組扱いする。
+*/
+function isHighSingleControl(
+  play,
+  ruleContext,
+) {
+  if (
+    play.analysis.type !== "single" ||
+    containsJoker(play)
+  ) {
+    return false;
+  }
+
+  const reverse =
+    isEffectiveReverse(ruleContext);
+
+  return reverse
+    ? play.analysis.strength <= 3
+    : play.analysis.strength >= 15;
+}
+
+/*
+  公開情報と自分の手札を除いた残存候補上、
+  自然札では返されないシングル。
+
+  例：通常時、4枚の2が全て消えている時のA。
+  Jokerは別の特殊札として扱い、ここでは
+  自然札による返しだけを調べる。
+*/
+function isKnowledgeBasedSingleControl({
+  play,
+  knowledge,
+  ruleContext,
+}) {
+  if (
+    play.analysis.type !== "single" ||
+    containsJoker(play) ||
+    !knowledge
+  ) {
+    return false;
+  }
+
+  const remainingNumbers =
+    knowledge
+      .remainingOpponentCardNumbers ?? [];
+
+  const reverse =
+    isEffectiveReverse(ruleContext);
+
+  return !remainingNumbers.some(
+    (number) => {
+      const card = numberToCardData(number);
+
+      if (card.isJoker) {
+        return false;
+      }
+
+      return canStrengthBeat({
+        candidateStrength:
+          card.strength,
+        fieldStrength:
+          play.analysis.strength,
+        reverse,
+      });
+    },
+  );
+}
+
+function isEffectiveZeroGroupPlay({
+  play,
+  knowledge,
+  ruleContext,
+  allowSpeculativeThreeCard = true,
+}) {
+  if (
+    play.analysis.type === "single" &&
+    containsJoker(play) &&
+    isSpadeThreeUnavailableToOpponents(
+      knowledge,
+    )
+  ) {
+    /*
+      スペ3が相手側に存在しない単独Jokerは、
+      確実に親を取れるため0組として数える。
+    */
+    return true;
+  }
+
+  if (isEightCutPlay(play)) {
+    return true;
+  }
+
+  if (
+    isAbsolutelyUnbeatable({
+      play,
+      knowledge,
+      ruleContext,
+    })
+  ) {
+    return true;
+  }
+
+  /*
+    自然札だけでは返せず、
+    相手がJokerを切らないと抵抗できないペアは
+    実戦上の切り札として0組扱いする。
+  */
+  if (
+    isPracticalPairControl({
+      play,
+      knowledge,
+      ruleContext,
+    })
+  ) {
+    return true;
+  }
+
+  if (
+    isHighSingleControl(
+      play,
+      ruleContext,
+    )
+  ) {
+    return true;
+  }
+
+  return (
+    allowSpeculativeThreeCard &&
+    isHighThreeCardControl(
+      play,
+      ruleContext,
+    )
+  );
+}
+
+function isHardLeadTakingPlay({
+  play,
+  knowledge,
+  ruleContext,
+}) {
+  if (isEightCutPlay(play)) {
+    return true;
+  }
+
+  if (
+    play.analysis.type === "single" &&
+    containsJoker(play)
+  ) {
+    /*
+      スペ3がまだ相手側にある可能性があれば、
+      Jokerは親取り札として信用しない。
+
+      スペ3が公開済み、または自分の手札なら
+      相手はスペ3返しできない。
+    */
+    return isSpadeThreeUnavailableToOpponents(
+      knowledge,
+    );
+  }
+
+  if (
+    isHighSingleControl(
+      play,
+      ruleContext,
+    )
+  ) {
+    return true;
+  }
+
+  if (
+    isAbsolutelyUnbeatable({
+      play,
+      knowledge,
+      ruleContext,
+    })
+  ) {
+    return true;
+  }
+
+  return isPracticalPairControl({
+    play,
+    knowledge,
+    ruleContext,
+  });
+}
+
+function isLowOutletPlayToPreserve({
+  play,
+  ruleContext,
+}) {
+  if (isEightCutPlay(play)) {
+    return false;
+  }
+
+  const reverse =
+    isEffectiveReverse(ruleContext);
+
+  /*
+    通常時の単独3は、
+    親を取り返した後に出すため温存する。
+  */
+  if (
+    !reverse &&
+    isSingleRank(play, 3)
+  ) {
+    return true;
+  }
+
+  /*
+    階段は崩れると処理しにくいため、
+    親取り札がある間は残す。
+  */
+  if (play.analysis.type === "straight") {
+    return true;
+  }
+
+  /*
+    低いトリオも親を取った後の
+    出口として残す。
+  */
+  if (play.analysis.type === "trio") {
+    return reverse
+      ? play.analysis.strength >= 9
+      : play.analysis.strength <= 11;
+  }
+
+  return false;
+}
+
+function createEffectiveGroupEvaluator({
+  hand,
+  allValidPlays,
+  knowledge,
+  ruleContext,
+}) {
+  const indexByCardId = new Map(
+    hand.map((card, index) => [
+      card.id,
+      index,
+    ]),
+  );
+
+  const playsWithMask =
+    allValidPlays.map((play) => ({
+      play,
+      mask: play.cardIds.reduce(
+        (mask, cardId) =>
+          mask |
+          (1 <<
+            indexByCardId.get(cardId)),
+        0,
+      ),
+    }));
+
+  const memo = new Map([[0, 0]]);
+
+  function getPlayCost(play) {
+    return isEffectiveZeroGroupPlay({
+      play,
+      knowledge,
+      ruleContext,
+      /*
+        TTT以上・QKA以上は、
+        上がりラッシュ専用の勝負手。
+
+        通常の手札整理では0組にせず、
+        謎吐きを防止する。
+      */
+      allowSpeculativeThreeCard: false,
+    })
+      ? 0
+      : 1;
+  }
+
+  function getMinimumCost(mask) {
+    if (memo.has(mask)) {
+      return memo.get(mask);
+    }
+
+    const firstBit = mask & -mask;
+    let minimum = Number.POSITIVE_INFINITY;
+
+    playsWithMask.forEach(
+      ({ play, mask: playMask }) => {
+        if (
+          (playMask & firstBit) === 0 ||
+          (playMask & mask) !== playMask
+        ) {
+          return;
+        }
+
+        /*
+          Jokerを含む組を最後に出すと
+          禁止上がりになるため、
+          最終1組としては採用しない。
+        */
+        if (
+          playMask === mask &&
+          containsJoker(play)
+        ) {
+          return;
+        }
+
+        const candidateCost =
+          getPlayCost(play) +
+          getMinimumCost(
+            mask ^ playMask,
+          );
+
+        minimum = Math.min(
+          minimum,
+          candidateCost,
+        );
+      },
+    );
+
+    memo.set(mask, minimum);
+    return minimum;
+  }
+
+  return {
+    fullMask:
+      (1 << hand.length) - 1,
+    getMinimumCost,
+    getPlayCost,
+    getPlayMask(play) {
+      return play.cardIds.reduce(
+        (mask, cardId) =>
+          mask |
+          (1 <<
+            indexByCardId.get(cardId)),
+        0,
+      );
+    },
+  };
+}
+
+function chooseByEffectiveGroupCount({
+  hand,
+  allValidPlays,
+  legalPlays,
+  knowledge,
+  ruleContext,
+  handIndexMap,
+}) {
+  if (legalPlays.length === 0) {
+    return null;
+  }
+
+  const evaluator =
+    createEffectiveGroupEvaluator({
+      hand,
+      allValidPlays,
+      knowledge,
+      ruleContext,
+    });
+
+  const reverse =
+    isEffectiveReverse(ruleContext);
+
+  return [...legalPlays]
+    .map((play) => {
+      const playMask =
+        evaluator.getPlayMask(play);
+
+      const remainingMask =
+        evaluator.fullMask ^ playMask;
+
+      return {
+        play,
+        playCost:
+          evaluator.getPlayCost(play),
+        effectiveGroupCount:
+          evaluator.getPlayCost(play) +
+          evaluator.getMinimumCost(
+            remainingMask,
+          ),
+        firstHandIndex: Math.min(
+          ...play.cards.map(
+            (card) =>
+              handIndexMap.get(card.id) ??
+              99,
+          ),
+        ),
+      };
+    })
+    .sort((a, b) => {
+      if (
+        a.effectiveGroupCount !==
+        b.effectiveGroupCount
+      ) {
+        return (
+          a.effectiveGroupCount -
+          b.effectiveGroupCount
+        );
+      }
+
+      if (
+        a.playCost !== b.playCost
+      ) {
+        /*
+          同じ実質組数なら、
+          0組の制圧札を温存する。
+        */
+        return (
+          b.playCost - a.playCost
+        );
+      }
+
+      if (
+        a.play.cards.length !==
+        b.play.cards.length
+      ) {
+        /*
+          同点なら従来どおり
+          シングル寄りに処理する。
+        */
+        return (
+          a.play.cards.length -
+          b.play.cards.length
+        );
+      }
+
+      if (
+        a.play.analysis.strength !==
+        b.play.analysis.strength
+      ) {
+        const difference =
+          a.play.analysis.strength -
+          b.play.analysis.strength;
+
+        return reverse
+          ? -difference
+          : difference;
+      }
+
+      return (
+        a.firstHandIndex -
+        b.firstHandIndex
+      );
+    })[0]?.play ?? null;
+}
+
 export function choosePresidentCpuPlay({
   hand,
   allValidPlays,
@@ -935,6 +1907,214 @@ export function choosePresidentCpuPlay({
       : hand.length === 1
         ? legalPlays
         : [];
+
+  const hasLeadTakingPlay =
+    allValidPlays.some((play) =>
+      isHardLeadTakingPlay({
+        play,
+        knowledge,
+        ruleContext,
+      }),
+    );
+
+  let strategicOrdinaryPlays =
+    ordinaryPlays;
+
+  if (isFieldEmpty(fieldPlay)) {
+    /*
+      上がりラッシュがない通常の親番では、
+      Jokerを除いた手札全体を役割へ分割して
+      明示した処理順で出す。
+    */
+    const roleBasedLead =
+      chooseRoleBasedLead({
+        hand,
+        allValidPlays,
+        legalPlays: ordinaryPlays,
+        ruleContext,
+        handIndexMap,
+      });
+
+    if (roleBasedLead) {
+      return roleBasedLead;
+    }
+
+    if (!hasLeadTakingPlay) {
+      /*
+        親を取り返す札がない時は、
+        待っても処理機会を作れない。
+
+        そのため階段を親番で即処理する。
+      */
+      const straightPlays =
+        ordinaryPlays.filter(
+          (play) =>
+            play.analysis.type ===
+            "straight",
+        );
+
+      const earlyStraight =
+        chooseByEffectiveGroupCount({
+          hand,
+          allValidPlays,
+          legalPlays: straightPlays,
+          knowledge,
+          ruleContext,
+          handIndexMap,
+        });
+
+      if (earlyStraight) {
+        return earlyStraight;
+      }
+
+      /*
+        階段がなければ単独3を早めに処理する。
+      */
+      const earlyThree =
+        ordinaryPlays.find(
+          (play) =>
+            isSingleRank(play, 3),
+        ) ?? null;
+
+      if (earlyThree) {
+        return earlyThree;
+      }
+
+      /*
+        J以下の低い3枚組も、
+        親取り札がなければ早めに勝負する。
+      */
+      const lowThreeCardPlays =
+        ordinaryPlays.filter(
+          (play) =>
+            isThreeCardAttack(play) &&
+            (
+              reverse
+                ? play.analysis.strength >=
+                  7
+                : play.analysis.strength <=
+                  11
+            ),
+        );
+
+      const earlyThreeCard =
+        chooseByHandOrder({
+          plays: lowThreeCardPlays,
+          handIndexMap,
+          reverse,
+        });
+
+      if (earlyThreeCard) {
+        return earlyThreeCard;
+      }
+
+      /*
+        親取り札がない時の第二方針。
+
+        J以下の自然なペア・トリオを
+        単品へ崩さず組のまま処理し、
+        Q以上中心の手札へ固めていく。
+      */
+      const lowNaturalMeldPlays =
+        ordinaryPlays.filter(
+          (play) =>
+            play.cards.length >= 2 &&
+            play.analysis.type !==
+              "straight" &&
+            !containsJoker(play) &&
+            play.cards.every(
+              (card) =>
+                reverse
+                  ? getCardStrength(card) >=
+                    7
+                  : getCardStrength(card) <=
+                    11,
+            ),
+        );
+
+      const earlyLowMeld =
+        chooseByEffectiveGroupCount({
+          hand,
+          allValidPlays,
+          legalPlays:
+            lowNaturalMeldPlays,
+          knowledge,
+          ruleContext,
+          handIndexMap,
+        });
+
+      if (earlyLowMeld) {
+        return earlyLowMeld;
+      }
+
+      /*
+        組になっていないJ以下の単品も
+        弱い順に処理する。
+      */
+      const lowDisposableSingles =
+        ordinaryPlays.filter(
+          (play) =>
+            play.analysis.type ===
+              "single" &&
+            !containsJoker(play) &&
+            (
+              reverse
+                ? play.analysis.strength >=
+                  7
+                : play.analysis.strength <=
+                  11
+            ) &&
+            disposableSingleIds.has(
+              play.cards[0].id,
+            ),
+        );
+
+      const earlyLowSingle =
+        chooseByHandOrder({
+          plays: lowDisposableSingles,
+          handIndexMap,
+          reverse,
+        });
+
+      if (earlyLowSingle) {
+        return earlyLowSingle;
+      }
+    } else {
+      /*
+        親取り札がある時は、
+        3・階段・低いトリオを
+        親を取り返した後の出口として温存する。
+      */
+      const withoutOutlets =
+        ordinaryPlays.filter(
+          (play) =>
+            !isLowOutletPlayToPreserve({
+              play,
+              ruleContext,
+            }),
+        );
+
+      if (withoutOutlets.length > 0) {
+        strategicOrdinaryPlays =
+          withoutOutlets;
+      }
+    }
+  }
+
+  const effectiveGroupPlay =
+    chooseByEffectiveGroupCount({
+      hand,
+      allValidPlays,
+      legalPlays:
+        strategicOrdinaryPlays,
+      knowledge,
+      ruleContext,
+      handIndexMap,
+    });
+
+  if (effectiveGroupPlay) {
+    return effectiveGroupPlay;
+  }
 
   const ordinaryDisposableSingles =
     ordinaryPlays.filter((play) =>
@@ -1135,8 +2315,23 @@ export function choosePresidentCpuPlay({
         (play) =>
           play.analysis.type ===
             "single" &&
-          !protectedMeldCardIds.has(
-            play.cards[0].id,
+          (
+            !protectedMeldCardIds.has(
+              play.cards[0].id,
+            ) ||
+            /*
+              組を崩すのは、その1枚で
+              親を確保できる場合だけ。
+
+              ハイトリオも無条件では崩さない。
+            */
+            canBreakProtectedMeldAsSingle({
+              play,
+              hand,
+              fieldPlay,
+              knowledge,
+              ruleContext,
+            })
           ),
       );
 

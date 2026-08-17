@@ -14,6 +14,7 @@ import {
 
 import {
   choosePresidentCpuPlay,
+  filterNonBreakingSingleResponses,
   findFinishRushPlan,
   findGuaranteedFinishPlan,
 } from "../utils/presidentCpuStrategy";
@@ -141,9 +142,15 @@ export default function useCpuTurn({
         const allCpuPlays =
           getAllValidPlays(
             cpuHand,
+            {
+              revolution:
+                ruleContext.revolution,
+              elevenBack:
+                ruleContext.elevenBack,
+            },
           );
 
-        const legalCpuPlays =
+        const rawLegalCpuPlays =
           allCpuPlays.filter((play) =>
             canBeatPlay(
               play.analysis,
@@ -161,6 +168,18 @@ export default function useCpuTurn({
           cpuCardKnowledge?.[
             cpuIndex
           ] ?? null;
+
+        const legalCpuPlays =
+          filterNonBreakingSingleResponses({
+            hand: cpuHand,
+            allValidPlays:
+              allCpuPlays,
+            legalPlays:
+              rawLegalCpuPlays,
+            fieldPlay,
+            knowledge,
+            ruleContext,
+          });
 
         const pendingPlan =
           guaranteedPlanRef.current;

@@ -177,7 +177,13 @@ export function getStraightOptions(cards) {
   return options;
 }
 
-function analyzeStraight(cards) {
+function analyzeStraight(
+  cards,
+  {
+    revolution = false,
+    elevenBack = false,
+  } = {},
+) {
   const options =
     getStraightOptions(cards);
 
@@ -185,18 +191,37 @@ function analyzeStraight(cards) {
     return null;
   }
 
+  const reversed =
+    Boolean(revolution) !==
+    Boolean(elevenBack);
+
   /*
-    Jokerは成立可能な中で
-    必ず最も大きい数字を担当する。
+    通常時はJokerを最も大きい数字へ、
+    反転中は最も小さい数字へ割り当てる。
+
+    例：9・10・Joker
+    通常時   → 9・10・J
+    革命中   → 8・9・10
   */
   const resolvedStraight =
     options.reduce(
-      (best, option) =>
-        !best ||
-        option.endStrength >
+      (best, option) => {
+        if (!best) {
+          return option;
+        }
+
+        if (reversed) {
+          return option.endStrength <
+            best.endStrength
+            ? option
+            : best;
+        }
+
+        return option.endStrength >
           best.endStrength
           ? option
-          : best,
+          : best;
+      },
       null,
     );
 
@@ -212,7 +237,10 @@ function analyzeStraight(cards) {
   };
 }
 
-export function analyzePlay(cards) {
+export function analyzePlay(
+  cards,
+  context = {},
+) {
   if (
     !Array.isArray(cards) ||
     cards.length === 0
@@ -244,7 +272,10 @@ export function analyzePlay(cards) {
   }
 
   const straight =
-    analyzeStraight(cards);
+    analyzeStraight(
+      cards,
+      context,
+    );
 
   if (straight) {
     return straight;
@@ -383,7 +414,10 @@ export function getGekiRequiredStrength({
   return null;
 }
 
-export function getAllValidPlays(hand) {
+export function getAllValidPlays(
+  hand,
+  context = {},
+) {
   const validPlays = [];
   const combinationCount =
     1 << hand.length;
@@ -406,7 +440,10 @@ export function getAllValidPlays(hand) {
     }
 
     const analysis =
-      analyzePlay(cards);
+      analyzePlay(
+        cards,
+        context,
+      );
 
     if (!analysis.valid) {
       continue;
@@ -570,9 +607,15 @@ export function getLegalPlaysAgainstField(
   context = {},
 ) {
   const fieldPlay =
-    analyzePlay(fieldCards);
+    analyzePlay(
+      fieldCards,
+      context,
+    );
 
-  return getAllValidPlays(hand).filter(
+  return getAllValidPlays(
+    hand,
+    context,
+  ).filter(
     (play) =>
       canBeatPlay(
         play.analysis,
