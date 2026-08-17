@@ -616,6 +616,7 @@ export default function usePresidentGame({
     hands,
     fieldPlay,
     ruleContext,
+    cpuCardKnowledge,
     playedCards,
     consecutivePasses,
     lastPlayPlayerIndex,

@@ -12,6 +12,12 @@ import {
   playGameSound,
 } from "../utils/gameAudio";
 
+import {
+  choosePresidentCpuPlay,
+  findFinishRushPlan,
+  findGuaranteedFinishPlan,
+} from "../utils/presidentCpuStrategy";
+
 const CPU_THINK_TIME = 700;
 
 const CARD_PLAY_SOUND_SOURCE =
@@ -22,6 +28,7 @@ export default function useCpuTurn({
   hands,
   fieldPlay,
   ruleContext,
+  cpuCardKnowledge,
 
   playedCards,
   consecutivePasses,
@@ -40,6 +47,16 @@ export default function useCpuTurn({
 }) {
   const actionInProgressRef =
     useRef(false);
+
+  const guaranteedPlanRef = useRef({
+    playerIndex: null,
+    remainingSteps: [],
+  });
+
+  const finishRushPlanRef = useRef({
+    playerIndex: null,
+    remainingSteps: [],
+  });
 
   const animateCpuCardsRef =
     useRef(animateCpuCards);
@@ -72,11 +89,23 @@ export default function useCpuTurn({
     handlePass;
 
   useEffect(() => {
+    if (isPaused || isRoundFinished) {
+      guaranteedPlanRef.current = {
+        playerIndex: null,
+        remainingSteps: [],
+      };
+
+      finishRushPlanRef.current = {
+        playerIndex: null,
+        remainingSteps: [],
+      };
+
+      return undefined;
+    }
+
     if (
       actionInProgressRef.current ||
-      isPaused ||
       currentPlayerIndex === 0 ||
-      isRoundFinished ||
       isRuleEffectPlaying
     ) {
       return undefined;
@@ -109,10 +138,13 @@ export default function useCpuTurn({
         const cpuHand =
           hands[cpuIndex];
 
-        const legalCpuPlays =
+        const allCpuPlays =
           getAllValidPlays(
             cpuHand,
-          ).filter((play) =>
+          );
+
+        const legalCpuPlays =
+          allCpuPlays.filter((play) =>
             canBeatPlay(
               play.analysis,
               fieldPlay,
@@ -125,13 +157,181 @@ export default function useCpuTurn({
             ),
           );
 
+        const knowledge =
+          cpuCardKnowledge?.[
+            cpuIndex
+          ] ?? null;
+
+        const pendingPlan =
+          guaranteedPlanRef.current;
+
+        let chosenPlay = null;
+
+        if (
+          pendingPlan.playerIndex ===
+            cpuIndex &&
+          pendingPlan.remainingSteps
+            .length > 0
+        ) {
+          if (!fieldPlay?.valid) {
+            const nextCardIds =
+              pendingPlan
+                .remainingSteps[0];
+
+            chosenPlay =
+              legalCpuPlays.find(
+                (play) =>
+                  play.cardIds.length ===
+                    nextCardIds.length &&
+                  play.cardIds.every(
+                    (cardId) =>
+                      nextCardIds.includes(
+                        cardId,
+                      ),
+                  ),
+              ) ?? null;
+          }
+
+          if (chosenPlay) {
+            guaranteedPlanRef.current = {
+              playerIndex: cpuIndex,
+              remainingSteps:
+                pendingPlan
+                  .remainingSteps
+                  .slice(1),
+            };
+          } else {
+            guaranteedPlanRef.current = {
+              playerIndex: null,
+              remainingSteps: [],
+            };
+          }
+        }
+
+        if (!chosenPlay) {
+          const guaranteedPlan =
+            findGuaranteedFinishPlan({
+              hand: cpuHand,
+              allValidPlays:
+                allCpuPlays,
+              legalPlays:
+                legalCpuPlays,
+              fieldPlay,
+              ruleContext,
+              knowledge,
+            });
+
+          if (guaranteedPlan?.length > 0) {
+            [chosenPlay] = guaranteedPlan;
+
+            guaranteedPlanRef.current = {
+              playerIndex: cpuIndex,
+              remainingSteps:
+                guaranteedPlan
+                  .slice(1)
+                  .map(
+                    (play) => [
+                      ...play.cardIds,
+                    ],
+                  ),
+            };
+          }
+        }
+
         /*
-          暫定CPUは、
-          左側から作れる
-          最初の合法手を出す。
+          確定ではない上がりラッシュ。
+          前の切り札が通って場が流れた時だけ
+          次の手順へ進む。返されたら即破棄する。
         */
-        const chosenPlay =
-          legalCpuPlays[0];
+        if (!chosenPlay) {
+          const pendingRush =
+            finishRushPlanRef.current;
+
+          if (
+            pendingRush.playerIndex ===
+              cpuIndex &&
+            pendingRush.remainingSteps
+              .length > 0
+          ) {
+            if (!fieldPlay?.valid) {
+              const nextCardIds =
+                pendingRush
+                  .remainingSteps[0];
+
+              chosenPlay =
+                legalCpuPlays.find(
+                  (play) =>
+                    play.cardIds.length ===
+                      nextCardIds.length &&
+                    play.cardIds.every(
+                      (cardId) =>
+                        nextCardIds.includes(
+                          cardId,
+                        ),
+                    ),
+                ) ?? null;
+            }
+
+            if (chosenPlay) {
+              finishRushPlanRef.current = {
+                playerIndex: cpuIndex,
+                remainingSteps:
+                  pendingRush
+                    .remainingSteps
+                    .slice(1),
+              };
+            } else {
+              finishRushPlanRef.current = {
+                playerIndex: null,
+                remainingSteps: [],
+              };
+            }
+          }
+        }
+
+        if (!chosenPlay) {
+          const finishRushPlan =
+            findFinishRushPlan({
+              hand: cpuHand,
+              allValidPlays:
+                allCpuPlays,
+              legalPlays:
+                legalCpuPlays,
+              fieldPlay,
+              ruleContext,
+              knowledge,
+            });
+
+          if (finishRushPlan?.length > 0) {
+            [chosenPlay] = finishRushPlan;
+
+            finishRushPlanRef.current = {
+              playerIndex: cpuIndex,
+              remainingSteps:
+                finishRushPlan
+                  .slice(1)
+                  .map(
+                    (play) => [
+                      ...play.cardIds,
+                    ],
+                  ),
+            };
+          }
+        }
+
+        if (!chosenPlay) {
+          chosenPlay =
+            choosePresidentCpuPlay({
+              hand: cpuHand,
+              allValidPlays:
+                allCpuPlays,
+              legalPlays:
+                legalCpuPlays,
+              fieldPlay,
+              ruleContext,
+              knowledge,
+            });
+        }
 
         if (!chosenPlay) {
           handlePassRef.current(
@@ -194,6 +394,7 @@ export default function useCpuTurn({
     hands,
     fieldPlay,
     ruleContext,
+    cpuCardKnowledge,
     playedCards,
     consecutivePasses,
     lastPlayPlayerIndex,
