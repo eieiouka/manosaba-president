@@ -14,6 +14,7 @@ import {
 
 import {
   chooseElevenBackThreePlay,
+  chooseEmergencyJokerDefense,
   choosePresidentCpuPlay,
   filterNonBreakingSingleResponses,
   findFinishRushPlan,
@@ -32,6 +33,7 @@ const CARD_PLAY_SOUND_SOURCE =
 export default function useCpuTurn({
   currentPlayerIndex,
   hands,
+  playerRanks,
   fieldPlay,
   ruleContext,
   cpuCardKnowledge,
@@ -225,6 +227,48 @@ export default function useCpuTurn({
               })
             : null;
 
+        /*
+          現在の場を出した相手が残り2枚以下なら、
+          この場を取らせたままにするのは危険。
+
+          また、別の相手でも残り1枚なら、
+          次に親を渡すだけで上がられる可能性が高い。
+        */
+        const fieldOwnerIsThreat =
+          lastPlayPlayerIndex !== null &&
+          lastPlayPlayerIndex !== cpuIndex &&
+          hands[
+            lastPlayPlayerIndex
+          ]?.length > 0 &&
+          hands[
+            lastPlayPlayerIndex
+          ].length <= 2;
+
+        const hasOneCardOpponent =
+          hands.some(
+            (playerHand, playerIndex) =>
+              playerIndex !== cpuIndex &&
+              playerHand.length === 1,
+          );
+
+        const hasImmediateFinishThreat =
+          fieldOwnerIsThreat ||
+          hasOneCardOpponent;
+
+        const emergencyJokerDefense =
+          activePlayerIndexes.length > 2 &&
+          playerRanks?.[cpuIndex] ===
+            "大富豪" &&
+          fieldPlay?.valid &&
+          hasImmediateFinishThreat
+            ? chooseEmergencyJokerDefense({
+                hand: cpuHand,
+                legalPlays:
+                  rawLegalCpuPlays,
+                ruleContext,
+              })
+            : null;
+
         if (
           headsUpDecision?.type === "pass"
         ) {
@@ -249,12 +293,13 @@ export default function useCpuTurn({
                         ),
                   ),
               ) ?? null
-            : ruleContext.elevenBack &&
+            : emergencyJokerDefense ??
+              (ruleContext.elevenBack &&
           !ruleContext.revolution
-            ? chooseElevenBackThreePlay(
-                legalCpuPlays,
-              )
-            : null;
+                ? chooseElevenBackThreePlay(
+                    legalCpuPlays,
+                  )
+                : null);
 
         const pendingPlan =
           guaranteedPlanRef.current;
@@ -485,6 +530,7 @@ export default function useCpuTurn({
   }, [
     currentPlayerIndex,
     hands,
+    playerRanks,
     fieldPlay,
     ruleContext,
     cpuCardKnowledge,

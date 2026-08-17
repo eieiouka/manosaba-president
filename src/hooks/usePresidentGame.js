@@ -648,6 +648,7 @@ export default function usePresidentGame({
   useCpuTurn({
     currentPlayerIndex,
     hands,
+    playerRanks,
     fieldPlay,
     ruleContext,
     cpuCardKnowledge,

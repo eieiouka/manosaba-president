@@ -9,6 +9,7 @@ import {
 
 import {
   chooseRoleBasedLead,
+  getCpuHandRoles,
 } from "./presidentCpuRoles";
 
 function isJoker(card) {
@@ -163,18 +164,33 @@ function getDisposableSingleIds({
   );
 }
 
-function getProtectedMeldCardIds(
+function getProtectedMeldCardIds({
+  hand,
   allValidPlays,
-) {
+  ruleContext,
+}) {
+  /*
+    「作れる全ての組」の和集合ではなく、
+    CPUが採用した最適分割だけを保護する。
+
+    例：89TT → 89T + T
+    階段側のTだけを保護し、余ったTは
+    シングルとして処理できる。
+  */
+  const handRoles = getCpuHandRoles({
+    hand,
+    allValidPlays,
+    ruleContext,
+  });
+
   return new Set(
-    allValidPlays
+    handRoles
       .filter(
-        (play) =>
-          play.cards.length >= 2 &&
-          !containsJoker(play),
+        (group) =>
+          group.cardIds.length >= 2,
       )
       .flatMap(
-        (play) => play.cardIds,
+        (group) => group.cardIds,
       ),
   );
 }
@@ -383,9 +399,11 @@ export function filterNonBreakingSingleResponses({
   }
 
   const protectedMeldCardIds =
-    getProtectedMeldCardIds(
+    getProtectedMeldCardIds({
+      hand,
       allValidPlays,
-    );
+      ruleContext,
+    });
 
   return legalPlays.filter((play) => {
     if (
@@ -628,6 +646,59 @@ export function chooseElevenBackThreePlay(
       }
 
       return 0;
+    })[0] ?? null;
+}
+
+/*
+  大富豪が、上がり目前の相手を
+  Jokerで強引に止める緊急手。
+*/
+export function chooseEmergencyJokerDefense({
+  hand,
+  legalPlays,
+  ruleContext,
+}) {
+  const reverse =
+    isEffectiveReverse(ruleContext);
+
+  const candidates = legalPlays.filter(
+    (play) =>
+      containsJoker(play) &&
+      /* Joker禁止上がりは選ばない。 */
+      play.cards.length < hand.length,
+  );
+
+  return [...candidates]
+    .sort((a, b) => {
+      const aEightCut =
+        isEightCutPlay(a);
+      const bEightCut =
+        isEightCutPlay(b);
+
+      if (aEightCut !== bEightCut) {
+        return aEightCut ? -1 : 1;
+      }
+
+      if (
+        a.analysis.strength !==
+        b.analysis.strength
+      ) {
+        const difference =
+          b.analysis.strength -
+          a.analysis.strength;
+
+        return reverse
+          ? -difference
+          : difference;
+      }
+
+      /*
+        同じ強さなら、一度に多く処理する。
+      */
+      return (
+        b.cards.length -
+        a.cards.length
+      );
     })[0] ?? null;
 }
 
@@ -1289,9 +1360,35 @@ export function findFinishRushPlan({
     context,
   ) {
     const byLowPassChance =
-      (a, b) =>
-        getRisk(b, context) -
-        getRisk(a, context);
+      (a, b) => {
+        const riskDifference =
+          getRisk(b, context) -
+          getRisk(a, context);
+
+        if (riskDifference !== 0) {
+          return riskDifference;
+        }
+
+        /*
+          ラッシュ上の価値が同じなら、
+          見栄えが自然になるよう
+          数字の小さい組から出す。
+        */
+        if (
+          a.analysis.strength !==
+          b.analysis.strength
+        ) {
+          return (
+            a.analysis.strength -
+            b.analysis.strength
+          );
+        }
+
+        return (
+          a.cards.length -
+          b.cards.length
+        );
+      };
 
     return [...controls].sort(
       byLowPassChance,
@@ -2720,9 +2817,11 @@ export function choosePresidentCpuPlay({
     });
 
   const protectedMeldCardIds =
-    getProtectedMeldCardIds(
+    getProtectedMeldCardIds({
+      hand,
       allValidPlays,
-    );
+      ruleContext,
+    });
 
   const looseThreePlay =
     ordinaryPlays.find(
