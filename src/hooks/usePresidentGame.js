@@ -18,6 +18,7 @@ import {
   canBeatPlay,
   getAllValidPlays,
   getPlayableCardIds,
+  resolvePlayAgainstField,
 } from "../utils/presidentRules";
 
 import {
@@ -183,6 +184,11 @@ export default function usePresidentGame({
   ] = useState([]);
 
   const [
+    playedAnalysis,
+    setPlayedAnalysis,
+  ] = useState(null);
+
+  const [
     lastPlayPlayerIndex,
     setLastPlayPlayerIndex,
   ] = useState(null);
@@ -266,6 +272,7 @@ export default function usePresidentGame({
     hands,
     playedCards,
     setPlayedCards,
+    setPlayedAnalysis,
     setLastPlayPlayerIndex,
     setConsecutivePasses,
     setCurrentPlayerIndex,
@@ -326,15 +333,19 @@ export default function usePresidentGame({
   const fieldPlay =
     useMemo(
       () =>
-        analyzePlay(
-          playedCards,
-          {
-            revolution,
-            elevenBack,
-          },
-        ),
+        playedCards.length > 0 &&
+        playedAnalysis
+          ? playedAnalysis
+          : analyzePlay(
+              playedCards,
+              {
+                revolution,
+                elevenBack,
+              },
+            ),
       [
         playedCards,
+        playedAnalysis,
         revolution,
         elevenBack,
       ],
@@ -459,6 +470,20 @@ export default function usePresidentGame({
     playerIndex,
     play,
   }) {
+    const resolvedAnalysis =
+      resolvePlayAgainstField(
+        play.analysis,
+        fieldPlay,
+        {
+          revolution,
+          elevenBack,
+        },
+      );
+
+    setPlayedAnalysis(
+      resolvedAnalysis,
+    );
+
     setPublicPlayedCardNumbers(
       (current) => [
         ...current,
@@ -531,7 +556,7 @@ export default function usePresidentGame({
 
     applyPlayRules({
       cards: play.cards,
-      analysis: play.analysis,
+      analysis: resolvedAnalysis,
       playerIndex,
       nextHands: resolvedHands,
       forbiddenFinish,
@@ -623,6 +648,7 @@ export default function usePresidentGame({
       );
 
     setPlayedCards([]);
+    setPlayedAnalysis(null);
     setLastPlayPlayerIndex(null);
     setConsecutivePasses(0);
     clearRuleEffects();
@@ -761,6 +787,7 @@ export default function usePresidentGame({
       場を空にする。
     */
     setPlayedCards([]);
+    setPlayedAnalysis(null);
     setLastPlayPlayerIndex(null);
     setConsecutivePasses(0);
 

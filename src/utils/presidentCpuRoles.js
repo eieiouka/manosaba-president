@@ -143,40 +143,43 @@ function getRole(play, reverse) {
 /*
   分割案そのものの品質。
 
-  ローシークエンスは低評価にして、
-  ポケット2組以上を壊す分割を自然に負けさせる。
+  手札の分割では、まず完成後の組数が
+  最も少なくなる分割を選ぶ。
 
-  エイト／ジャック／ハイシークエンスは、
-  ポケットを崩してでも残す価値があるため高評価にする。
+  組数が同じ分割が複数ある場合は、
+  トリオ・階段を多く含む分割を優先する。
+
+  KA2は階段として弱いため、組数が減る場合だけ
+  採用し、同じ組数の比較では避ける。
+
+  例：
+    4556   → 456 + 5
+    445566 → 456 + 456（3組から2組になる）
 */
 const PARTITION_VALUE = {
   single: 0,
-  pocket: 12,
-  set: 18,
+  pocket: 10,
+  set: 100,
 
-  lowSequence: 10,
-  eightSequence: 46,
-  jackSequence: 48,
-  highSequence: 52,
+  sequence: 100,
+  weakKa2Sequence: -100,
 
-  revolution: 58,
+  revolution: 100,
 };
 
 function getPartitionValue(play, role) {
-  if (role === "lowSequence") {
-    return PARTITION_VALUE.lowSequence;
-  }
+  if (play.analysis.type === "straight") {
+    const bounds = getStraightBounds(play);
 
-  if (role === "eightSequence") {
-    return PARTITION_VALUE.eightSequence;
-  }
+    if (
+      play.cards.length === 3 &&
+      bounds.start === 13 &&
+      bounds.end === 15
+    ) {
+      return PARTITION_VALUE.weakKa2Sequence;
+    }
 
-  if (role === "jackSequence") {
-    return PARTITION_VALUE.jackSequence;
-  }
-
-  if (role === "highSequence") {
-    return PARTITION_VALUE.highSequence;
+    return PARTITION_VALUE.sequence;
   }
 
   if (role === "revolution") {
@@ -414,10 +417,12 @@ function buildBestNaturalPartition({
 
       if (
         !best ||
-        result.value > best.value ||
+        result.groupCount <
+          best.groupCount ||
         (
-          result.value === best.value &&
-          result.groupCount < best.groupCount
+          result.groupCount ===
+            best.groupCount &&
+          result.value > best.value
         )
       ) {
         best = result;

@@ -17,6 +17,7 @@ export default function useFieldRules({
   hands,
   playedCards,
   setPlayedCards,
+  setPlayedAnalysis,
   setLastPlayPlayerIndex,
   setConsecutivePasses,
   setCurrentPlayerIndex,
@@ -142,6 +143,7 @@ export default function useFieldRules({
       pendingSpecialClear;
 
     setPlayedCards([]);
+    setPlayedAnalysis(null);
     setLastPlayPlayerIndex(null);
     setConsecutivePasses(0);
     resetTemporaryFieldRules();
@@ -167,6 +169,7 @@ export default function useFieldRules({
     hands,
     getNextPlayerIndex,
     setPlayedCards,
+    setPlayedAnalysis,
     setLastPlayPlayerIndex,
     setConsecutivePasses,
     setCurrentPlayerIndex,

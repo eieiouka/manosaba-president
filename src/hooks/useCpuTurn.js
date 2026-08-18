@@ -6,6 +6,7 @@ import {
 import {
   canBeatPlay,
   getAllValidPlays,
+  resolvePlayAgainstField,
 } from "../utils/presidentRules";
 
 import {
@@ -158,18 +159,28 @@ export default function useCpuTurn({
           );
 
         const rawLegalCpuPlays =
-          allCpuPlays.filter((play) =>
-            canBeatPlay(
-              play.analysis,
-              fieldPlay,
-              {
-                ...ruleContext,
+          allCpuPlays
+            .filter((play) =>
+              canBeatPlay(
+                play.analysis,
+                fieldPlay,
+                {
+                  ...ruleContext,
 
-                candidateCards:
-                  play.cards,
-              },
-            ),
-          );
+                  candidateCards:
+                    play.cards,
+                },
+              ),
+            )
+            .map((play) => ({
+              ...play,
+              analysis:
+                resolvePlayAgainstField(
+                  play.analysis,
+                  fieldPlay,
+                  ruleContext,
+                ),
+            }));
 
         const knowledge =
           cpuCardKnowledge?.[

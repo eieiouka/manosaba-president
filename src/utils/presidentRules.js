@@ -196,15 +196,28 @@ function analyzeStraight(
     Boolean(elevenBack);
 
   /*
-    通常時はJokerを最も大きい数字へ、
-    反転中は最も小さい数字へ割り当てる。
+    Jokerは成立する範囲で好きな数字にできる。
 
-    例：9・10・Joker
-    通常時   → 9・10・J
-    革命中   → 8・9・10
+    通常は、通常時なら上側、反転中なら下側の
+    最も強い解釈を選ぶ。
+
+    ただし8を含む解釈が可能なら、
+    数字の強さより8切りを優先する。
   */
+  const eightCutOptions =
+    options.filter(
+      (option) =>
+        option.startStrength <= 8 &&
+        option.endStrength >= 8,
+    );
+
+  const preferredOptions =
+    eightCutOptions.length > 0
+      ? eightCutOptions
+      : options;
+
   const resolvedStraight =
-    options.reduce(
+    preferredOptions.reduce(
       (best, option) => {
         if (!best) {
           return option;
@@ -588,6 +601,25 @@ export function canBeatPlay(
     Boolean(revolution) !==
     Boolean(elevenBack);
 
+  /*
+    Joker入り階段は複数の数字として解釈できる。
+    既定の解釈で勝てなくても、別の解釈で
+    勝てるなら合法手として扱う。
+  */
+  if (
+    candidatePlay.type === "straight" &&
+    candidatePlay.straightOptions?.length > 0
+  ) {
+    return candidatePlay.straightOptions.some(
+      (option) =>
+        reversed
+          ? option.endStrength <
+            fieldPlay.strength
+          : option.endStrength >
+            fieldPlay.strength,
+    );
+  }
+
   if (reversed) {
     return (
       candidatePlay.strength <
@@ -628,4 +660,87 @@ export function getLegalPlaysAgainstField(
         },
       ),
   );
+}
+
+/*
+  実際に場へ出す時のJoker階段解釈を決める。
+
+  1. 場札に勝てる解釈だけを残す
+  2. その中に8を含む解釈があれば8切りを優先
+  3. なければ通常時は上側、反転中は下側
+*/
+export function resolvePlayAgainstField(
+  candidatePlay,
+  fieldPlay,
+  {
+    revolution = false,
+    elevenBack = false,
+  } = {},
+) {
+  if (
+    candidatePlay?.type !== "straight" ||
+    !candidatePlay.straightOptions?.length
+  ) {
+    return candidatePlay;
+  }
+
+  const reversed =
+    Boolean(revolution) !==
+    Boolean(elevenBack);
+
+  const legalOptions = fieldPlay?.valid
+    ? candidatePlay.straightOptions.filter(
+        (option) =>
+          reversed
+            ? option.endStrength <
+              fieldPlay.strength
+            : option.endStrength >
+              fieldPlay.strength,
+      )
+    : candidatePlay.straightOptions;
+
+  if (legalOptions.length === 0) {
+    return candidatePlay;
+  }
+
+  const eightCutOptions =
+    legalOptions.filter(
+      (option) =>
+        option.startStrength <= 8 &&
+        option.endStrength >= 8,
+    );
+
+  const preferredOptions =
+    eightCutOptions.length > 0
+      ? eightCutOptions
+      : legalOptions;
+
+  const resolvedStraight =
+    preferredOptions.reduce(
+      (best, option) => {
+        if (!best) {
+          return option;
+        }
+
+        if (reversed) {
+          return option.endStrength <
+            best.endStrength
+            ? option
+            : best;
+        }
+
+        return option.endStrength >
+          best.endStrength
+          ? option
+          : best;
+      },
+      null,
+    );
+
+  return {
+    ...candidatePlay,
+    strength:
+      resolvedStraight.endStrength,
+    resolvedStraight,
+  };
 }

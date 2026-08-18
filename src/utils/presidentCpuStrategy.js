@@ -2483,6 +2483,130 @@ function chooseByEffectiveGroupCount({
     })[0]?.play ?? null;
 }
 
+/*
+  子では、親番用に決めた手札分割へ固執せず、
+  実際に出した後の組数が減る手を優先する。
+
+  例：44556を持って33へ返す場合、
+  44を出せば残りは55・6の2組になるため、
+  階段候補を守ってPASSすることはない。
+*/
+function chooseGroupReducingResponse({
+  hand,
+  allValidPlays,
+  legalPlays,
+  ruleContext,
+  handIndexMap,
+}) {
+  if (legalPlays.length === 0) {
+    return null;
+  }
+
+  const getGroupCount = (
+    remainingHand,
+  ) => {
+    const remainingIds = new Set(
+      remainingHand.map(
+        (card) => card.id,
+      ),
+    );
+
+    const remainingPlays =
+      allValidPlays.filter((play) =>
+        play.cardIds.every((cardId) =>
+          remainingIds.has(cardId),
+        ),
+      );
+
+    const naturalGroupCount =
+      getCpuHandRoles({
+        hand: remainingHand,
+        allValidPlays: remainingPlays,
+        ruleContext,
+      }).length;
+
+    const jokerCount =
+      remainingHand.filter(
+        isJoker,
+      ).length;
+
+    return naturalGroupCount + jokerCount;
+  };
+
+  const currentGroupCount =
+    getGroupCount(hand);
+
+  const candidates = legalPlays
+    .filter(
+      (play) =>
+        !(
+          containsJoker(play) &&
+          play.cards.length === hand.length
+        ),
+    )
+    .map((play) => {
+      const playedIds = new Set(
+        play.cardIds,
+      );
+
+      const remainingHand = hand.filter(
+        (card) =>
+          !playedIds.has(card.id),
+      );
+
+      return {
+        play,
+        remainingGroupCount:
+          getGroupCount(remainingHand),
+        firstHandIndex: Math.min(
+          ...play.cards.map(
+            (card) =>
+              handIndexMap.get(card.id) ??
+              99,
+          ),
+        ),
+      };
+    })
+    .filter(
+      (candidate) =>
+        candidate.remainingGroupCount <
+        currentGroupCount,
+    );
+
+  const reverse =
+    isEffectiveReverse(ruleContext);
+
+  return candidates.sort((a, b) => {
+    if (
+      a.remainingGroupCount !==
+      b.remainingGroupCount
+    ) {
+      return (
+        a.remainingGroupCount -
+        b.remainingGroupCount
+      );
+    }
+
+    if (
+      a.play.analysis.strength !==
+      b.play.analysis.strength
+    ) {
+      const difference =
+        a.play.analysis.strength -
+        b.play.analysis.strength;
+
+      return reverse
+        ? -difference
+        : difference;
+    }
+
+    return (
+      a.firstHandIndex -
+      b.firstHandIndex
+    );
+  })[0]?.play ?? null;
+}
+
 export function choosePresidentCpuPlay({
   hand,
   allValidPlays,
@@ -2532,6 +2656,21 @@ export function choosePresidentCpuPlay({
       : hand.length === 1
         ? legalPlays
         : [];
+
+  if (!isFieldEmpty(fieldPlay)) {
+    const groupReducingResponse =
+      chooseGroupReducingResponse({
+        hand,
+        allValidPlays,
+        legalPlays,
+        ruleContext,
+        handIndexMap,
+      });
+
+    if (groupReducingResponse) {
+      return groupReducingResponse;
+    }
+  }
 
   /*
     通常時の22は強力な親取り札なので、
