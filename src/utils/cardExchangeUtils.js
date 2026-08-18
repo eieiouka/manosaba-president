@@ -329,7 +329,15 @@ function chooseRichExchangeCards(
     );
   });
 
-  const scoredCards = hand.map(
+  const scoredCards = hand
+    /*
+      富豪・大富豪は8を絶対に渡さない。
+      8切りという確定した親取り札なので、
+      単品・ペア・階段の状態を問わず
+      自由交換の候補から完全に除外する。
+    */
+    .filter((card) => card.rank !== 8)
+    .map(
     (card, handIndex) => {
       const strength =
         getCardStrength(card);
