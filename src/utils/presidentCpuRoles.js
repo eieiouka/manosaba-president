@@ -327,24 +327,6 @@ function getElevenBackSinglePriority(play) {
   return Number.POSITIVE_INFINITY;
 }
 
-/*
-  革命中は2が最弱札になるため、
-  親番では2の自然な組を最優先で処理する。
-
-  2222は革命を元へ戻してしまうので、
-  この単純な処理優先には含めない。
-*/
-function isRevolutionDeuceOutlet(play) {
-  return (
-    play.cards.length >= 1 &&
-    play.cards.length <= 3 &&
-    !play.cards.some(isJoker) &&
-    play.cards.every(
-      (card) => card.rank === 2,
-    )
-  );
-}
-
 function buildBestNaturalPartition({
   hand,
   allValidPlays,
@@ -501,30 +483,6 @@ export function chooseRoleBasedLead({
 
   return [...legalGroups]
     .sort((a, b) => {
-      if (
-        ruleContext.revolution &&
-        !ruleContext.elevenBack
-      ) {
-        const aRevolutionDeuce =
-          isRevolutionDeuceOutlet(
-            a.play,
-          );
-
-        const bRevolutionDeuce =
-          isRevolutionDeuceOutlet(
-            b.play,
-          );
-
-        if (
-          aRevolutionDeuce !==
-          bRevolutionDeuce
-        ) {
-          return aRevolutionDeuce
-            ? -1
-            : 1;
-        }
-      }
-
       if (ruleContext.elevenBack) {
         const aElevenBackPriority =
           getElevenBackSinglePriority(

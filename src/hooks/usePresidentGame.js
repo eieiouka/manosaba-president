@@ -48,11 +48,11 @@ const PASS_VOICE_SOURCES = [
   "/audio/hanna-pass.mp3",
 ];
 
-const WIN_VOICE_SOURCES = [
-  "/audio/nanoka-win.mp3",
-  "/audio/ema-win.mp3",
-  "/audio/sherry-win.mp3",
-  "/audio/hanna-win.mp3",
+const FINISH_VOICE_SOURCES = [
+  "/audio/nanoka-finish.mp3",
+  "/audio/ema-finish.mp3",
+  "/audio/sherry-finish.mp3",
+  "/audio/hanna-finish.mp3",
 ];
 
 function playPassVoice(playerIndex) {
@@ -273,51 +273,55 @@ export default function usePresidentGame({
       getNextActivePlayerIndex,
   });
 
-  const voicedWinnerRef = useRef(null);
+  const voicedFinishPlayersRef = useRef(
+    new Set(),
+  );
 
   /*
-    全順位とルール演出が確定してから、
-    そのラウンドの勝者ボイスを一度だけ流す。
+    正常に手札を出し切ったプレイヤーの
+    上がりボイスを、そのラウンドで一度だけ流す。
+
+    forbiddenFinishPlayerIndexesやpenaltyOrderではなく
+    normalFinishOrderだけを見るため、
+    禁止上がり・都落ちでは再生されない。
   */
   useEffect(() => {
-    if (!isRoundFinished) {
-      voicedWinnerRef.current = null;
+    if (normalFinishOrder.length === 0) {
+      voicedFinishPlayersRef.current =
+        new Set();
       return;
     }
 
-    if (isRuleEffectPlaying) {
-      return;
-    }
-
-    const winnerPlayerIndex =
-      finishOrder[0];
+    const newlyFinishedPlayerIndex =
+      [...normalFinishOrder]
+        .reverse()
+        .find(
+          (playerIndex) =>
+            !voicedFinishPlayersRef
+              .current
+              .has(playerIndex),
+        );
 
     if (
-      winnerPlayerIndex === undefined ||
-      voicedWinnerRef.current ===
-        winnerPlayerIndex
+      newlyFinishedPlayerIndex ===
+      undefined
     ) {
       return;
     }
 
+    voicedFinishPlayersRef.current.add(
+      newlyFinishedPlayerIndex,
+    );
+
     const source =
-      WIN_VOICE_SOURCES[
-        winnerPlayerIndex
+      FINISH_VOICE_SOURCES[
+        newlyFinishedPlayerIndex
       ];
 
-    if (!source) {
-      return;
+    if (source) {
+      playGameSound(source);
     }
-
-    voicedWinnerRef.current =
-      winnerPlayerIndex;
-
-    playGameSound(source);
-  }, [
-    finishOrder,
-    isRoundFinished,
-    isRuleEffectPlaying,
-  ]);
+  }, [normalFinishOrder]);
 
   const fieldPlay =
     useMemo(

@@ -2234,12 +2234,16 @@ function isLowOutletPlayToPreserve({
     isEffectiveReverse(ruleContext);
 
   /*
-    通常時の単独3は、
-    親を取り返した後に出すため温存する。
+    最弱の単独札は、親を取り返した後に
+    出すため温存する。
+
+    通常時：3
+    反転中：2
   */
+  const weakestRank = reverse ? 2 : 3;
+
   if (
-    !reverse &&
-    isSingleRank(play, 3)
+    isSingleRank(play, weakestRank)
   ) {
     return true;
   }
@@ -2560,14 +2564,15 @@ export function choosePresidentCpuPlay({
       }),
     );
 
-  const hasNormalControlAnchor =
-    !reverse &&
+  const controlRank = reverse ? 3 : 2;
+
+  const hasControlAnchor =
     hand.some(
       (card) =>
         !isJoker(card) &&
         (
           card.rank === 8 ||
-          card.rank === 2
+          card.rank === controlRank
         ),
     );
 
@@ -2639,16 +2644,25 @@ export function choosePresidentCpuPlay({
       }
 
       /*
-        階段がなければ単独3を早めに処理する。
+        階段がなければ、現在の最弱単品を
+        早めに処理する。
+
+        通常時：3
+        反転中：2
       */
-      const earlyThree =
+      const weakestRank = reverse ? 2 : 3;
+
+      const earlyWeakestSingle =
         ordinaryPlays.find(
           (play) =>
-            isSingleRank(play, 3),
+            isSingleRank(
+              play,
+              weakestRank,
+            ),
         ) ?? null;
 
-      if (earlyThree) {
-        return earlyThree;
+      if (earlyWeakestSingle) {
+        return earlyWeakestSingle;
       }
 
       /*
@@ -2817,7 +2831,11 @@ export function choosePresidentCpuPlay({
     ordinaryPlays.filter(
       (play) =>
         isThreeCardAttack(play) &&
-        play.analysis.strength <= 7,
+        (
+          reverse
+            ? play.analysis.strength >= 11
+            : play.analysis.strength <= 7
+        ),
     );
 
   const weakestWeakThreeCard =
@@ -2834,10 +2852,15 @@ export function choosePresidentCpuPlay({
       ruleContext,
     });
 
-  const looseThreePlay =
+  const weakestRank = reverse ? 2 : 3;
+
+  const looseWeakestPlay =
     ordinaryPlays.find(
       (play) =>
-        isSingleRank(play, 3) &&
+        isSingleRank(
+          play,
+          weakestRank,
+        ) &&
         !protectedMeldCardIds.has(
           play.cards[0].id,
         ),
@@ -2847,18 +2870,17 @@ export function choosePresidentCpuPlay({
     knowledge
       ?.remainingOpponentCardNumbers ?? [];
 
-  const twoCardNumbers = new Set([
-    2,
-    15,
-    28,
-    41,
-  ]);
+  const controlCardNumbers = new Set(
+    reverse
+      ? [3, 16, 29, 42]
+      : [2, 15, 28, 41],
+  );
 
-  const opponentMayHaveTwo =
+  const opponentMayHaveControl =
     !knowledge ||
     possibleOpponentNumbers.some(
       (number) =>
-        twoCardNumbers.has(number),
+        controlCardNumbers.has(number),
     );
 
   /*
@@ -2893,23 +2915,33 @@ export function choosePresidentCpuPlay({
   */
   if (isFieldEmpty(fieldPlay)) {
     /*
-      3とAのように弱い札を抱える余裕がなく、
-      まだ相手の2が残り得る場合は3から処理する。
+    最弱札と弱いハイカードを抱える余裕がなく、
+    まだ相手の親取り札が残り得る場合は
+    最弱札から処理する。
+
+    通常時：最弱3／親取り2
+    反転中：最弱2／親取り3
 
       4～Qの処理できる孤立単品がある間は、
       そちらを先に処理する。
     */
     if (
-      looseThreePlay &&
-      !hasNormalControlAnchor &&
-      opponentMayHaveTwo &&
+      looseWeakestPlay &&
+      !hasControlAnchor &&
+      opponentMayHaveControl &&
       (
         !weakestDisposableSingle ||
-        weakestDisposableSingle
-          .analysis.strength >= 13
+        (
+          reverse
+            ? 18 -
+              weakestDisposableSingle
+                .analysis.strength
+            : weakestDisposableSingle
+                .analysis.strength
+        ) >= 13
       )
     ) {
-      return looseThreePlay;
+      return looseWeakestPlay;
     }
 
     if (

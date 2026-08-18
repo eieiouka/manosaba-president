@@ -1,5 +1,6 @@
 import {
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -35,6 +36,10 @@ import {
   opponents,
 } from "./constants/presidentConstants";
 
+import {
+  playGameSound,
+} from "./utils/gameAudio";
+
 const TOTAL_ROUNDS = 5;
 
 const GAME_PHASES = {
@@ -50,6 +55,88 @@ const RANKS_BY_PLACE = [
   "貧民",
   "大貧民",
 ];
+
+const SCORE_BY_PLACE = [
+  2,
+  1,
+  -1,
+  -2,
+];
+
+const CHAMPION_VOICE_SOURCES = [
+  "/audio/nanoka-champion.mp3",
+  "/audio/ema-champion.mp3",
+  "/audio/sherry-champion.mp3",
+  "/audio/hanna-champion.mp3",
+];
+
+function getMatchChampionIndex(rounds) {
+  if (rounds.length < TOTAL_ROUNDS) {
+    return null;
+  }
+
+  const orderedRounds = [...rounds]
+    .sort(
+      (roundA, roundB) =>
+        roundA.roundNumber -
+        roundB.roundNumber,
+    )
+    .slice(0, TOTAL_ROUNDS);
+
+  const totalScores = Array.from(
+    { length: 4 },
+    () => 0,
+  );
+
+  orderedRounds.forEach((round) => {
+    round.finishOrder.forEach(
+      (playerIndex, place) => {
+        totalScores[playerIndex] +=
+          SCORE_BY_PLACE[place] ?? 0;
+
+        /* 最終戦の大富豪だけ+1点。 */
+        if (
+          round.roundNumber ===
+            TOTAL_ROUNDS &&
+          place === 0
+        ) {
+          totalScores[playerIndex] += 1;
+        }
+      },
+    );
+  });
+
+  const finalRound =
+    orderedRounds[
+      orderedRounds.length - 1
+    ];
+
+  return [0, 1, 2, 3]
+    .sort((playerA, playerB) => {
+      if (
+        totalScores[playerB] !==
+        totalScores[playerA]
+      ) {
+        return (
+          totalScores[playerB] -
+          totalScores[playerA]
+        );
+      }
+
+      /*
+        同点なら最終戦の着順が
+       上だったプレイヤーを優勝とする。
+      */
+      return (
+        finalRound.finishOrder.indexOf(
+          playerA,
+        ) -
+        finalRound.finishOrder.indexOf(
+          playerB,
+        )
+      );
+    })[0];
+}
 
 function createRanksFromFinishOrder(
   finishOrder,
@@ -103,6 +190,9 @@ function calculateGameScale() {
 }
 
 function App() {
+  const championVoicePlayedRef =
+    useRef(false);
+
   const [
     debugMode,
     setDebugMode,
@@ -125,6 +215,44 @@ function App() {
     savedRounds,
     setSavedRounds,
   ] = useState([]);
+
+  /*
+    5回戦すべての集計が終わった時だけ、
+    総合優勝者のChampionボイスを一度流す。
+  */
+  useEffect(() => {
+    if (
+      gamePhase !==
+        GAME_PHASES.FINAL_RESULT ||
+      championVoicePlayedRef.current
+    ) {
+      return;
+    }
+
+    const championPlayerIndex =
+      getMatchChampionIndex(
+        savedRounds,
+      );
+
+    if (championPlayerIndex === null) {
+      return;
+    }
+
+    const source =
+      CHAMPION_VOICE_SOURCES[
+        championPlayerIndex
+      ];
+
+    if (!source) {
+      return;
+    }
+
+    championVoicePlayedRef.current = true;
+    playGameSound(source);
+  }, [
+    gamePhase,
+    savedRounds,
+  ]);
 
   /*
     現在のゲーム開始時点での階級。
