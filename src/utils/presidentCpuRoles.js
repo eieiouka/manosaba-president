@@ -222,7 +222,6 @@ function getRolePriority({
       threePocket: 41,
       middlePocket: 50,
 
-      threeSingle: 60,
       lowSequence: 61,
       lowSet: 62,
 
@@ -230,6 +229,12 @@ function getRolePriority({
       highSingle: 80,
       jackSet: 90,
       highPocket: 100,
+
+      /*
+        2・8などの親取り札がある時は、
+        単独3を先に切らず終盤まで残す。
+      */
+      threeSingle: 106,
 
       jackSequence: 108,
       middleSet: 110,

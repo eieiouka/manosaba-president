@@ -1,6 +1,7 @@
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -45,6 +46,13 @@ const PASS_VOICE_SOURCES = [
   "/audio/ema-pass.mp3",
   "/audio/sherry-pass.mp3",
   "/audio/hanna-pass.mp3",
+];
+
+const WIN_VOICE_SOURCES = [
+  "/audio/nanoka-win.mp3",
+  "/audio/ema-win.mp3",
+  "/audio/sherry-win.mp3",
+  "/audio/hanna-win.mp3",
 ];
 
 function playPassVoice(playerIndex) {
@@ -264,6 +272,52 @@ export default function usePresidentGame({
     getNextPlayerIndex:
       getNextActivePlayerIndex,
   });
+
+  const voicedWinnerRef = useRef(null);
+
+  /*
+    全順位とルール演出が確定してから、
+    そのラウンドの勝者ボイスを一度だけ流す。
+  */
+  useEffect(() => {
+    if (!isRoundFinished) {
+      voicedWinnerRef.current = null;
+      return;
+    }
+
+    if (isRuleEffectPlaying) {
+      return;
+    }
+
+    const winnerPlayerIndex =
+      finishOrder[0];
+
+    if (
+      winnerPlayerIndex === undefined ||
+      voicedWinnerRef.current ===
+        winnerPlayerIndex
+    ) {
+      return;
+    }
+
+    const source =
+      WIN_VOICE_SOURCES[
+        winnerPlayerIndex
+      ];
+
+    if (!source) {
+      return;
+    }
+
+    voicedWinnerRef.current =
+      winnerPlayerIndex;
+
+    playGameSound(source);
+  }, [
+    finishOrder,
+    isRoundFinished,
+    isRuleEffectPlaying,
+  ]);
 
   const fieldPlay =
     useMemo(

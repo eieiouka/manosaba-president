@@ -2560,6 +2560,17 @@ export function choosePresidentCpuPlay({
       }),
     );
 
+  const hasNormalControlAnchor =
+    !reverse &&
+    hand.some(
+      (card) =>
+        !isJoker(card) &&
+        (
+          card.rank === 8 ||
+          card.rank === 2
+        ),
+    );
+
   let strategicOrdinaryPlays =
     ordinaryPlays;
 
@@ -2890,6 +2901,7 @@ export function choosePresidentCpuPlay({
     */
     if (
       looseThreePlay &&
+      !hasNormalControlAnchor &&
       opponentMayHaveTwo &&
       (
         !weakestDisposableSingle ||

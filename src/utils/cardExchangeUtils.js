@@ -179,15 +179,251 @@ export function getCpuExchangeCardIds(
   hand,
   rank,
 ) {
-  const firstSelection =
+  const validSelections =
     getValidExchangeSelections(
       hand,
       rank,
-    )[0] ?? [];
+    );
 
-  return firstSelection.map(
-    (card) => card.id,
+  if (validSelections.length === 0) {
+    return [];
+  }
+
+  /*
+    貧民・大貧民は最強札を渡すこと自体は強制。
+    同じ強さの札を選べる場合だけ、交換後に
+    同色の階段が最も多く残る組み合わせを選ぶ。
+  */
+  if (isForcedExchangeRank(rank)) {
+    const bestSelection =
+      [...validSelections].sort(
+        (selectionA, selectionB) =>
+          getStraightPreservationScore(
+            removeCards(
+              hand,
+              selectionB,
+            ),
+          ) -
+          getStraightPreservationScore(
+            removeCards(
+              hand,
+              selectionA,
+            ),
+          ),
+      )[0];
+
+    return bestSelection.map(
+      (card) => card.id,
+    );
+  }
+
+  return chooseRichExchangeCards(
+    hand,
+    getExchangeCount(rank),
+  ).map((card) => card.id);
+}
+
+function isJoker(card) {
+  return Boolean(
+    card?.isJoker ||
+    card?.suit === "joker",
   );
+}
+
+/*
+  同一スートで3枚以上連続しているカードを保護する。
+
+  例：同色の4・5・6と、別色の5
+  → 4・5・6だけを階段として保護
+  → 別色の5は単品として交換できる
+*/
+function getStraightProtectedCardIds(hand) {
+  const protectedIds = new Set();
+
+  Object.keys(SUIT_ORDER)
+    .filter((suit) => suit !== "joker")
+    .forEach((suit) => {
+      const suitedCards = hand
+        .filter(
+          (card) =>
+            !isJoker(card) &&
+            card.suit === suit,
+        )
+        .sort(
+          (a, b) =>
+            getCardStrength(a) -
+            getCardStrength(b),
+        );
+
+      let run = [];
+
+      const preserveRun = () => {
+        if (run.length >= 3) {
+          run.forEach((card) => {
+            protectedIds.add(card.id);
+          });
+        }
+      };
+
+      suitedCards.forEach((card) => {
+        const previous =
+          run[run.length - 1];
+
+        if (
+          !previous ||
+          getCardStrength(card) ===
+            getCardStrength(previous) + 1
+        ) {
+          run.push(card);
+          return;
+        }
+
+        preserveRun();
+        run = [card];
+      });
+
+      preserveRun();
+    });
+
+  return protectedIds;
+}
+
+function getStraightPreservationScore(hand) {
+  return getStraightProtectedCardIds(
+    hand,
+  ).size;
+}
+
+function removeCards(hand, removedCards) {
+  const removedIds = new Set(
+    removedCards.map((card) => card.id),
+  );
+
+  return hand.filter(
+    (card) => !removedIds.has(card.id),
+  );
+}
+
+function chooseRichExchangeCards(
+  hand,
+  count,
+) {
+  const straightProtectedIds =
+    getStraightProtectedCardIds(hand);
+
+  const unprotectedCards = hand.filter(
+    (card) =>
+      !straightProtectedIds.has(card.id),
+  );
+
+  const countByStrength = new Map();
+
+  unprotectedCards.forEach((card) => {
+    const strength =
+      getCardStrength(card);
+
+    countByStrength.set(
+      strength,
+      (countByStrength.get(strength) ?? 0) +
+        1,
+    );
+  });
+
+  const scoredCards = hand.map(
+    (card, handIndex) => {
+      const strength =
+        getCardStrength(card);
+      const isProtected =
+        straightProtectedIds.has(card.id);
+      const remainingSameRankCount =
+        countByStrength.get(strength) ?? 0;
+
+      let category = 8;
+
+      if (!isProtected && !isJoker(card)) {
+        if (
+          remainingSameRankCount === 1 &&
+          strength >= 4 &&
+          strength <= 11
+        ) {
+          /* 4～Jの単品を最優先。 */
+          category = 0;
+        } else if (
+          remainingSameRankCount === 1 &&
+          strength === 3
+        ) {
+          /* 次に単独3。 */
+          category = 1;
+        } else if (
+          remainingSameRankCount >= 2 &&
+          strength >= 4
+        ) {
+          /* それもなければ、4以上の最小ペアを崩す。 */
+          category = 2;
+        } else if (
+          remainingSameRankCount === 1
+        ) {
+          /* Q以上など、その他の単品。 */
+          category = 3;
+        } else {
+          category = 4;
+        }
+      } else if (!isProtected && isJoker(card)) {
+        /* Jokerは最後まで渡さない。 */
+        category = 7;
+      } else {
+        /* 階段を構成する札は極力守る。 */
+        category = 6;
+      }
+
+      return {
+        card,
+        category,
+        strength,
+        handIndex,
+      };
+    },
+  );
+
+  scoredCards.sort((a, b) =>
+    a.category - b.category ||
+    a.strength - b.strength ||
+    a.handIndex - b.handIndex,
+  );
+
+  const selected = [];
+  const selectedStrengths = new Set();
+
+  /*
+    大富豪が2枚渡す場合、候補があるなら
+    同じペアの両方をまとめて渡さず、別の数字から1枚ずつ選ぶ。
+  */
+  scoredCards.forEach((entry) => {
+    if (
+      selected.length >= count ||
+      selectedStrengths.has(entry.strength)
+    ) {
+      return;
+    }
+
+    selected.push(entry.card);
+    selectedStrengths.add(entry.strength);
+  });
+
+  scoredCards.forEach((entry) => {
+    if (
+      selected.length >= count ||
+      selected.some(
+        (card) => card.id === entry.card.id,
+      )
+    ) {
+      return;
+    }
+
+    selected.push(entry.card);
+  });
+
+  return selected;
 }
 
 function sortHand(cards) {
