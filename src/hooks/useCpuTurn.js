@@ -15,11 +15,11 @@ import {
 
 import {
   chooseElevenBackThreePlay,
-  chooseEmergencyJokerDefense,
   choosePresidentCpuPlay,
   filterNonBreakingSingleResponses,
   findFinishRushPlan,
   findGuaranteedFinishPlan,
+  getFinishRushGroupCount,
 } from "../utils/presidentCpuStrategy";
 
 import {
@@ -34,14 +34,12 @@ const CARD_PLAY_SOUND_SOURCE =
 export default function useCpuTurn({
   currentPlayerIndex,
   hands,
-  playerRanks,
   fieldPlay,
   ruleContext,
   cpuCardKnowledge,
 
   playedCards,
   consecutivePasses,
-  lastPlayPlayerIndex,
 
   isRoundFinished,
   isRuleEffectPlaying,
@@ -56,16 +54,6 @@ export default function useCpuTurn({
 }) {
   const actionInProgressRef =
     useRef(false);
-
-  const guaranteedPlanRef = useRef({
-    playerIndex: null,
-    remainingSteps: [],
-  });
-
-  const finishRushPlanRef = useRef({
-    playerIndex: null,
-    remainingSteps: [],
-  });
 
   const animateCpuCardsRef =
     useRef(animateCpuCards);
@@ -99,16 +87,6 @@ export default function useCpuTurn({
 
   useEffect(() => {
     if (isPaused || isRoundFinished) {
-      guaranteedPlanRef.current = {
-        playerIndex: null,
-        remainingSteps: [],
-      };
-
-      finishRushPlanRef.current = {
-        playerIndex: null,
-        remainingSteps: [],
-      };
-
       return undefined;
     }
 
@@ -182,12 +160,43 @@ export default function useCpuTurn({
                 ),
             }));
 
+        /*
+          単独Jokerへのスペ3返しは、CPU戦略より
+          上位の強制応答として扱う。
+
+          手札分割・組数・2人読みの結果にかかわらず、
+          合法なスペ3があれば必ず出す。
+        */
+        const currentFieldCards =
+          ruleContext.fieldCards ??
+          playedCards;
+
+        const fieldIsSingleJoker =
+          currentFieldCards?.length === 1 &&
+          (
+            currentFieldCards[0].isJoker ||
+            currentFieldCards[0].suit ===
+              "joker"
+          );
+
+        const forcedSpadeThreeResponse =
+          fieldIsSingleJoker
+            ? rawLegalCpuPlays.find(
+                (play) =>
+                  play.cards.length === 1 &&
+                  !play.cards[0].isJoker &&
+                  play.cards[0].suit ===
+                    "spades" &&
+                  play.cards[0].rank === 3,
+              ) ?? null
+            : null;
+
         const knowledge =
           cpuCardKnowledge?.[
             cpuIndex
           ] ?? null;
 
-        const legalCpuPlays =
+        let legalCpuPlays =
           filterNonBreakingSingleResponses({
             hand: cpuHand,
             allValidPlays:
@@ -198,6 +207,103 @@ export default function useCpuTurn({
             knowledge,
             ruleContext,
           });
+
+        /*
+          通常時の22は、単に1組減るというだけでは
+          出さない。
+
+          22を出した後の自然な手札が1組以下なら、
+          親を取ってそのまま上がりへ繋げられる
+          強い形として使用を許可する。
+
+          例：
+            3・9・22 → 残り2組なので22を出さない
+            567・22 → 残り1組なので22を使用可能
+        */
+        if (
+          !ruleContext.revolution &&
+          !ruleContext.elevenBack
+        ) {
+          const naturalDeuceCount =
+            cpuHand.filter(
+              (card) =>
+                !card.isJoker &&
+                card.suit !== "joker" &&
+                card.rank === 2,
+            ).length;
+
+          legalCpuPlays =
+            legalCpuPlays.filter(
+              (play) => {
+                const isNaturalDeucePair =
+                  play.analysis.type ===
+                    "pair" &&
+                  play.cards.length === 2 &&
+                  play.cards.every(
+                    (card) =>
+                      !card.isJoker &&
+                      card.suit !== "joker" &&
+                      card.rank === 2,
+                  );
+
+                if (!isNaturalDeucePair) {
+                  return true;
+                }
+
+                /*
+                  222を持っている時は22を出しても
+                  単独2が残るため、22温存フィルターを
+                  発動させない。
+                */
+                if (naturalDeuceCount >= 3) {
+                  return true;
+                }
+
+                const playedIds = new Set(
+                  play.cardIds,
+                );
+
+                const remainingHand =
+                  cpuHand.filter(
+                    (card) =>
+                      !playedIds.has(card.id),
+                  );
+
+                if (remainingHand.length === 0) {
+                  return true;
+                }
+
+                const remainingIds = new Set(
+                  remainingHand.map(
+                    (card) => card.id,
+                  ),
+                );
+
+                const remainingPlays =
+                  allCpuPlays.filter(
+                    (candidate) =>
+                      candidate.cardIds.every(
+                        (cardId) =>
+                          remainingIds.has(
+                            cardId,
+                          ),
+                      ),
+                  );
+
+                const remainingGroupCount =
+                  getFinishRushGroupCount({
+                    hand: remainingHand,
+                    allValidPlays:
+                      remainingPlays,
+                    ruleContext,
+                  });
+
+                return (
+                  remainingGroupCount <= 1
+                );
+              },
+            );
+        }
 
         const activePlayerIndexes =
           hands
@@ -238,49 +344,8 @@ export default function useCpuTurn({
               })
             : null;
 
-        /*
-          現在の場を出した相手が残り2枚以下なら、
-          この場を取らせたままにするのは危険。
-
-          また、別の相手でも残り1枚なら、
-          次に親を渡すだけで上がられる可能性が高い。
-        */
-        const fieldOwnerIsThreat =
-          lastPlayPlayerIndex !== null &&
-          lastPlayPlayerIndex !== cpuIndex &&
-          hands[
-            lastPlayPlayerIndex
-          ]?.length > 0 &&
-          hands[
-            lastPlayPlayerIndex
-          ].length <= 2;
-
-        const hasOneCardOpponent =
-          hands.some(
-            (playerHand, playerIndex) =>
-              playerIndex !== cpuIndex &&
-              playerHand.length === 1,
-          );
-
-        const hasImmediateFinishThreat =
-          fieldOwnerIsThreat ||
-          hasOneCardOpponent;
-
-        const emergencyJokerDefense =
-          activePlayerIndexes.length > 2 &&
-          playerRanks?.[cpuIndex] ===
-            "大富豪" &&
-          fieldPlay?.valid &&
-          hasImmediateFinishThreat
-            ? chooseEmergencyJokerDefense({
-                hand: cpuHand,
-                legalPlays:
-                  rawLegalCpuPlays,
-                ruleContext,
-              })
-            : null;
-
         if (
+          !forcedSpadeThreeResponse &&
           headsUpDecision?.type === "pass"
         ) {
           handlePassRef.current(
@@ -290,7 +355,8 @@ export default function useCpuTurn({
         }
 
         let chosenPlay =
-          headsUpDecision?.type === "play"
+          forcedSpadeThreeResponse ??
+          (headsUpDecision?.type === "play"
             ? rawLegalCpuPlays.find(
                 (play) =>
                   play.cardIds.length ===
@@ -304,58 +370,18 @@ export default function useCpuTurn({
                         ),
                   ),
               ) ?? null
-            : emergencyJokerDefense ??
-              (ruleContext.elevenBack &&
+            : (ruleContext.elevenBack &&
           !ruleContext.revolution
                 ? chooseElevenBackThreePlay(
-                    legalCpuPlays,
+                    {
+                      hand: cpuHand,
+                      allValidPlays:
+                        allCpuPlays,
+                      legalPlays:
+                        legalCpuPlays,
+                    },
                   )
-                : null);
-
-        const pendingPlan =
-          guaranteedPlanRef.current;
-
-        if (
-          !chosenPlay &&
-          pendingPlan.playerIndex ===
-            cpuIndex &&
-          pendingPlan.remainingSteps
-            .length > 0
-        ) {
-          if (!fieldPlay?.valid) {
-            const nextCardIds =
-              pendingPlan
-                .remainingSteps[0];
-
-            chosenPlay =
-              legalCpuPlays.find(
-                (play) =>
-                  play.cardIds.length ===
-                    nextCardIds.length &&
-                  play.cardIds.every(
-                    (cardId) =>
-                      nextCardIds.includes(
-                        cardId,
-                      ),
-                  ),
-              ) ?? null;
-          }
-
-          if (chosenPlay) {
-            guaranteedPlanRef.current = {
-              playerIndex: cpuIndex,
-              remainingSteps:
-                pendingPlan
-                  .remainingSteps
-                  .slice(1),
-            };
-          } else {
-            guaranteedPlanRef.current = {
-              playerIndex: null,
-              remainingSteps: [],
-            };
-          }
-        }
+                : null));
 
         if (!chosenPlay) {
           const guaranteedPlan =
@@ -372,69 +398,6 @@ export default function useCpuTurn({
 
           if (guaranteedPlan?.length > 0) {
             [chosenPlay] = guaranteedPlan;
-
-            guaranteedPlanRef.current = {
-              playerIndex: cpuIndex,
-              remainingSteps:
-                guaranteedPlan
-                  .slice(1)
-                  .map(
-                    (play) => [
-                      ...play.cardIds,
-                    ],
-                  ),
-            };
-          }
-        }
-
-        /*
-          確定ではない上がりラッシュ。
-          前の切り札が通って場が流れた時だけ
-          次の手順へ進む。返されたら即破棄する。
-        */
-        if (!chosenPlay) {
-          const pendingRush =
-            finishRushPlanRef.current;
-
-          if (
-            pendingRush.playerIndex ===
-              cpuIndex &&
-            pendingRush.remainingSteps
-              .length > 0
-          ) {
-            if (!fieldPlay?.valid) {
-              const nextCardIds =
-                pendingRush
-                  .remainingSteps[0];
-
-              chosenPlay =
-                legalCpuPlays.find(
-                  (play) =>
-                    play.cardIds.length ===
-                      nextCardIds.length &&
-                    play.cardIds.every(
-                      (cardId) =>
-                        nextCardIds.includes(
-                          cardId,
-                        ),
-                    ),
-                ) ?? null;
-            }
-
-            if (chosenPlay) {
-              finishRushPlanRef.current = {
-                playerIndex: cpuIndex,
-                remainingSteps:
-                  pendingRush
-                    .remainingSteps
-                    .slice(1),
-              };
-            } else {
-              finishRushPlanRef.current = {
-                playerIndex: null,
-                remainingSteps: [],
-              };
-            }
           }
         }
 
@@ -453,18 +416,6 @@ export default function useCpuTurn({
 
           if (finishRushPlan?.length > 0) {
             [chosenPlay] = finishRushPlan;
-
-            finishRushPlanRef.current = {
-              playerIndex: cpuIndex,
-              remainingSteps:
-                finishRushPlan
-                  .slice(1)
-                  .map(
-                    (play) => [
-                      ...play.cardIds,
-                    ],
-                  ),
-            };
           }
         }
 
@@ -541,13 +492,11 @@ export default function useCpuTurn({
   }, [
     currentPlayerIndex,
     hands,
-    playerRanks,
     fieldPlay,
     ruleContext,
     cpuCardKnowledge,
     playedCards,
     consecutivePasses,
-    lastPlayPlayerIndex,
     isRoundFinished,
     isRuleEffectPlaying,
     isPaused,

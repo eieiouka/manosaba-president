@@ -143,8 +143,12 @@ function getRole(play, reverse) {
 /*
   分割案そのものの品質。
 
-  手札の分割では、まず完成後の組数が
-  最も少なくなる分割を選ぶ。
+  手札の分割では、まず8と親取り札を0組とした
+  実質組数が最も少なくなる分割を選ぶ。
+
+  通常時は2、革命時は3を親取り札とする。
+  実質組数が同じなら、実際の組数が少ない
+  分割を優先する。
 
   組数が同じ分割が複数ある場合は、
   トリオ・階段を多く含む分割を優先する。
@@ -222,10 +226,8 @@ function getRolePriority({
   if (hasControlAnchor) {
     const withControl = {
       lowPocket: 40,
-      threePocket: 41,
       middlePocket: 50,
 
-      lowSequence: 61,
       lowSet: 62,
 
       jackPocket: 70,
@@ -238,8 +240,10 @@ function getRolePriority({
         単独3を先に切らず終盤まで残す。
       */
       threeSingle: 106,
+      threePocket: 107,
+      lowSequence: 108,
 
-      jackSequence: 108,
+      jackSequence: 109,
       middleSet: 110,
       highSet: 112,
       eightSequence: 114,
@@ -259,12 +263,12 @@ function getRolePriority({
 
   const withoutControl = {
     lowSequence: 40,
-    lowSet: 50,
+    lowPocket: 50,
+
     threeSingle: 60,
     threePocket: 61,
-
-    lowPocket: 65,
-    middlePocket: 66,
+    lowSet: 62,
+    middlePocket: 65,
 
     jackPocket: 70,
     highSingle: 80,
@@ -334,6 +338,7 @@ function buildBestNaturalPartition({
   hand,
   allValidPlays,
   reverse,
+  controlRank,
 }) {
   const naturalCards = hand.filter(
     (card) => !isJoker(card),
@@ -371,6 +376,16 @@ function buildBestNaturalPartition({
           0,
         ),
         value: getPartitionValue(play, role),
+        groupCost: play.cards.some(
+          (card) =>
+            !isJoker(card) &&
+            (
+              card.rank === 8 ||
+              card.rank === controlRank
+            ),
+        )
+          ? 0
+          : 1,
       };
     });
 
@@ -381,6 +396,7 @@ function buildBestNaturalPartition({
       return {
         value: 0,
         groupCount: 0,
+        effectiveGroupCount: 0,
         groups: [],
       };
     }
@@ -409,6 +425,9 @@ function buildBestNaturalPartition({
           candidate.value + remainder.value,
         groupCount:
           1 + remainder.groupCount,
+        effectiveGroupCount:
+          candidate.groupCost +
+          remainder.effectiveGroupCount,
         groups: [
           candidate,
           ...remainder.groups,
@@ -417,12 +436,20 @@ function buildBestNaturalPartition({
 
       if (
         !best ||
-        result.groupCount <
-          best.groupCount ||
+        result.effectiveGroupCount <
+          best.effectiveGroupCount ||
         (
-          result.groupCount ===
-            best.groupCount &&
-          result.value > best.value
+          result.effectiveGroupCount ===
+            best.effectiveGroupCount &&
+          (
+            result.groupCount <
+              best.groupCount ||
+            (
+              result.groupCount ===
+                best.groupCount &&
+              result.value > best.value
+            )
+          )
         )
       ) {
         best = result;
@@ -445,6 +472,7 @@ export function chooseRoleBasedLead({
   legalPlays,
   ruleContext,
   handIndexMap,
+  hasControlAnchorOverride,
 }) {
   const reverse =
     Boolean(ruleContext.revolution) !==
@@ -455,6 +483,10 @@ export function chooseRoleBasedLead({
       hand,
       allValidPlays,
       reverse,
+      controlRank:
+        ruleContext.revolution
+          ? 3
+          : 2,
     });
 
   if (partition.length === 0) {
@@ -479,12 +511,14 @@ export function chooseRoleBasedLead({
   }
 
   const controlRank = reverse ? 3 : 2;
-  const hasControlAnchor = hand.some(
-    (card) =>
-      !isJoker(card) &&
-      (card.rank === 8 ||
-        card.rank === controlRank),
-  );
+  const hasControlAnchor =
+    hasControlAnchorOverride ??
+    hand.some(
+      (card) =>
+        !isJoker(card) &&
+        (card.rank === 8 ||
+          card.rank === controlRank),
+    );
 
   return [...legalGroups]
     .sort((a, b) => {
@@ -595,12 +629,61 @@ export function getCpuHandRoles({
     Boolean(ruleContext.revolution) !==
     Boolean(ruleContext.elevenBack);
 
+  const controlRank =
+    ruleContext.revolution ? 3 : 2;
+
   return buildBestNaturalPartition({
     hand,
     allValidPlays,
     reverse,
-  }).map(({ play, role }) => ({
-    role,
-    cardIds: [...play.cardIds],
-  }));
+    controlRank,
+  }).map(({ play, role }) => {
+    const isZeroGroup =
+      play.cards.some(
+        (card) =>
+          !isJoker(card) &&
+          (
+            card.rank === 8 ||
+            card.rank === controlRank
+          ),
+      );
+
+    return {
+      role,
+      cardIds: [...play.cardIds],
+      groupCost: isZeroGroup ? 0 : 1,
+    };
+  });
+}
+
+/*
+  CPUが通常思考で使う実質組数。
+
+  通常時：8と2を含む組は0組
+  革命時：8と3を含む組は0組、2は1組
+
+  789・KA2・345などの階段も、対象ランクを
+  含んでいれば組全体を0組として数える。
+  Jokerは上がりラッシュへ接続できる切り札なので、
+  実質組数には加算しない。
+*/
+export function getCpuEffectiveGroupCount({
+  hand,
+  allValidPlays,
+  ruleContext,
+}) {
+  const roles = getCpuHandRoles({
+    hand,
+    allValidPlays,
+    ruleContext,
+  });
+
+  const naturalGroupCount =
+    roles.reduce(
+      (total, group) =>
+        total + group.groupCost,
+      0,
+    );
+
+  return naturalGroupCount;
 }
