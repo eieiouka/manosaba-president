@@ -976,6 +976,88 @@ export function findGuaranteedFinishPlan({
   }
 
   /*
+    残り3枚でスペ3が相手に残っていない時は、
+    JokerをK等とペアにして一度に消費しない。
+
+    通常札 → 相手の返しに単独Joker
+             （返されなくても次に単独Joker）
+           → 最後の通常札
+
+    と進めれば、Jokerで確実に親を取り返せる。
+
+    8や通常時の2／反転中の3は、それ自体で
+    親を取れる既存ルートがあるため囮にはしない。
+  */
+  if (
+    hand.length === 3 &&
+    hand.filter(isJoker).length === 1 &&
+    isSpadeThreeUnavailableToOpponents(
+      knowledge,
+    )
+  ) {
+    const reverse =
+      isEffectiveReverse(ruleContext);
+
+    const controlRank = reverse ? 3 : 2;
+
+    const baitSingles = legalPlays
+      .filter(
+        (play) =>
+          play.analysis.type === "single" &&
+          play.cards.length === 1 &&
+          !containsJoker(play) &&
+          play.cards[0].rank !== 8 &&
+          play.cards[0].rank !== controlRank,
+      )
+      .sort((a, b) =>
+        reverse
+          ? b.analysis.strength -
+            a.analysis.strength
+          : a.analysis.strength -
+            b.analysis.strength,
+      );
+
+    const jokerSingle =
+      allValidPlays.find(
+        (play) =>
+          play.analysis.type === "single" &&
+          play.cards.length === 1 &&
+          containsJoker(play),
+      ) ?? null;
+
+    for (const baitSingle of baitSingles) {
+      const usedIds = new Set([
+        ...baitSingle.cardIds,
+        ...(jokerSingle?.cardIds ?? []),
+      ]);
+
+      const finalCard = hand.find(
+        (card) =>
+          !usedIds.has(card.id),
+      );
+
+      const finalSingle = finalCard
+        ? allValidPlays.find(
+            (play) =>
+              play.analysis.type ===
+                "single" &&
+              play.cards.length === 1 &&
+              play.cardIds[0] ===
+                finalCard.id,
+          ) ?? null
+        : null;
+
+      if (jokerSingle && finalSingle) {
+        return [
+          baitSingle,
+          jokerSingle,
+          finalSingle,
+        ];
+      }
+    }
+  }
+
+  /*
     通常時の自然な2で親を取り、
     残り1組、または8切り＋最後の1組へ
     繋がる場合は2から開始する。
@@ -2919,6 +3001,84 @@ function chooseGroupReducingResponse({
   const currentGroupCount =
     getGroupCount(hand);
 
+  /*
+    現在CPUが採用している分割のうち、階段だけを
+    追跡する。作れる全階段ではなく採用済み階段を
+    見るため、余り札まで過剰保護しない。
+  */
+  const adoptedStraightGroups =
+    getCpuHandRoles({
+      hand,
+      allValidPlays,
+      ruleContext,
+    }).filter(
+      (group) =>
+        group.play?.analysis?.type ===
+        "straight",
+    );
+
+  const straightBreakData = (play) => {
+    if (
+      play.analysis.type !== "single" ||
+      containsJoker(play)
+    ) {
+      return {
+        breaksStraight: false,
+        breaksWithControl: false,
+        isSafeEdgeBreak: false,
+      };
+    }
+
+    const card = play.cards[0];
+    const adoptedGroup =
+      adoptedStraightGroups.find(
+        (group) =>
+          group.cardIds.includes(card.id) &&
+          group.cardIds.length > 1,
+      );
+
+    if (!adoptedGroup) {
+      return {
+        breaksStraight: false,
+        breaksWithControl: false,
+        isSafeEdgeBreak: false,
+      };
+    }
+
+    const controlRank =
+      isEffectiveReverse(ruleContext)
+        ? 3
+        : 2;
+
+    const breaksWithControl =
+      card.rank === 8 ||
+      card.rank === controlRank;
+
+    const strengths =
+      adoptedGroup.play.cards
+        .filter(
+          (groupCard) =>
+            !isJoker(groupCard),
+        )
+        .map(getCardStrength)
+        .sort((a, b) => a - b);
+
+    const cardStrength =
+      getCardStrength(card);
+
+    const isEdge =
+      cardStrength === strengths[0] ||
+      cardStrength ===
+        strengths.at(-1);
+
+    return {
+      breaksStraight: true,
+      breaksWithControl,
+      isSafeEdgeBreak:
+        isEdge && !breaksWithControl,
+    };
+  };
+
   const candidates = legalPlays
     .filter(
       (play) =>
@@ -2937,8 +3097,12 @@ function chooseGroupReducingResponse({
           !playedIds.has(card.id),
       );
 
+      const breakData =
+        straightBreakData(play);
+
       return {
         play,
+        ...breakData,
         remainingGroupCount:
           getGroupCount(remainingHand),
         isControlFallback:
@@ -2986,8 +3150,23 @@ function chooseGroupReducingResponse({
       };
     });
 
-  const reducingCandidates =
+  /*
+    採用済み階段の8・通常時2・反転中3は、
+    通常応手のために単独で抜かない。
+
+    789なら7または9の端から崩せるが、
+    KA2で2しか出せない場合はPASSする。
+    上がりラッシュ／確定上がりはこの判定より
+    前に処理されるため、必要な時は使用できる。
+  */
+  const eligibleCandidates =
     candidates.filter(
+      (candidate) =>
+        !candidate.breaksWithControl,
+    );
+
+  const reducingCandidates =
+    eligibleCandidates.filter(
       (candidate) =>
         candidate.remainingGroupCount <
         currentGroupCount,
@@ -3003,9 +3182,16 @@ function chooseGroupReducingResponse({
   const consideredCandidates =
     reducingCandidates.length > 0
       ? reducingCandidates
-      : candidates.filter(
-          ({ play, isControlFallback }) =>
-            isControlFallback &&
+      : eligibleCandidates.filter(
+          ({
+            play,
+            isControlFallback,
+            isSafeEdgeBreak,
+          }) =>
+            (
+              isControlFallback ||
+              isSafeEdgeBreak
+            ) &&
             !isNaturalDeucePair(play),
         );
 

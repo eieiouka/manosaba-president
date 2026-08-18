@@ -14,6 +14,7 @@ import {
 } from "../utils/gameAudio";
 
 import {
+  chooseEmergencyJokerDefense,
   chooseElevenBackThreePlay,
   choosePresidentCpuPlay,
   filterNonBreakingSingleResponses,
@@ -34,12 +35,14 @@ const CARD_PLAY_SOUND_SOURCE =
 export default function useCpuTurn({
   currentPlayerIndex,
   hands,
+  playerRanks = [],
   fieldPlay,
   ruleContext,
   cpuCardKnowledge,
 
   playedCards,
   consecutivePasses,
+  lastPlayPlayerIndex = null,
 
   isRoundFinished,
   isRuleEffectPlaying,
@@ -196,6 +199,42 @@ export default function useCpuTurn({
             cpuIndex
           ] ?? null;
 
+        /*
+          大富豪CPUは、直前に出した相手が
+          残り2枚以下まで迫った場合、Jokerを使って
+          強引に親を奪い返す。
+
+          例：残り3枚の相手が単独2を出す
+              → 相手は残り2枚
+              → 合法なら単独Jokerで抵抗する
+
+          Joker禁止上がりになる場合は、
+          chooseEmergencyJokerDefense側で除外される。
+        */
+        const threatenedPlayerIndex =
+          lastPlayPlayerIndex;
+
+        const shouldEmergencyDefend =
+          playerRanks[cpuIndex] ===
+            "大富豪" &&
+          threatenedPlayerIndex !== null &&
+          threatenedPlayerIndex !==
+            cpuIndex &&
+          hands[threatenedPlayerIndex]
+            ?.length > 0 &&
+          hands[threatenedPlayerIndex]
+            .length <= 2;
+
+        const emergencyJokerDefense =
+          shouldEmergencyDefend
+            ? chooseEmergencyJokerDefense({
+                hand: cpuHand,
+                legalPlays:
+                  rawLegalCpuPlays,
+                ruleContext,
+              })
+            : null;
+
         let legalCpuPlays =
           filterNonBreakingSingleResponses({
             hand: cpuHand,
@@ -346,6 +385,7 @@ export default function useCpuTurn({
 
         if (
           !forcedSpadeThreeResponse &&
+          !emergencyJokerDefense &&
           headsUpDecision?.type === "pass"
         ) {
           handlePassRef.current(
@@ -356,6 +396,7 @@ export default function useCpuTurn({
 
         let chosenPlay =
           forcedSpadeThreeResponse ??
+          emergencyJokerDefense ??
           (headsUpDecision?.type === "play"
             ? rawLegalCpuPlays.find(
                 (play) =>
@@ -492,11 +533,13 @@ export default function useCpuTurn({
   }, [
     currentPlayerIndex,
     hands,
+    playerRanks,
     fieldPlay,
     ruleContext,
     cpuCardKnowledge,
     playedCards,
     consecutivePasses,
+    lastPlayPlayerIndex,
     isRoundFinished,
     isRuleEffectPlaying,
     isPaused,

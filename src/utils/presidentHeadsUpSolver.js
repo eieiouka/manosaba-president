@@ -9,6 +9,10 @@ import {
   isSpadeThree,
 } from "./presidentRules";
 
+import {
+  getCpuHandRoles,
+} from "./presidentCpuRoles";
+
 const SUITS = [
   "spades",
   "hearts",
@@ -262,6 +266,130 @@ function orderPlays(plays) {
   });
 }
 
+/*
+  2人戦のルートで、勝てる手が複数ある場合の
+  最初の一手だけを戦略的に並べる。
+
+  内部探索のorderPlaysは枝刈り速度を優先して
+  強い札から調べるが、その順番をそのまま根で
+  使うと、強札を先に吐いて4・7だけを残す。
+
+  根では次の順に優先する。
+    1. 出した後の自然な組数が少ない
+    2. Joker・8・最強札を温存する
+    3. 通常時は弱い数字、反転時は高い数字
+*/
+function orderRootPlays({
+  plays,
+  hand,
+  context,
+}) {
+  const reverse = Boolean(
+    context.revolution,
+  ) !== Boolean(
+    context.elevenBack,
+  );
+
+  const controlRank = reverse ? 3 : 2;
+
+  return [...plays]
+    .map((play) => {
+      const playedIds = new Set(
+        play.cardIds,
+      );
+
+      const remainingHand = hand.filter(
+        (card) =>
+          !playedIds.has(card.id),
+      );
+
+      const remainingPlays =
+        getAllValidPlays(
+          remainingHand,
+          context,
+        );
+
+      const remainingGroupCount =
+        remainingHand.length === 0
+          ? 0
+          : getCpuHandRoles({
+              hand: remainingHand,
+              allValidPlays:
+                remainingPlays,
+              ruleContext: context,
+            }).length;
+
+      const effects = getPlayEffects(
+        play.cards,
+        play.analysis,
+      );
+
+      let controlCost = 0;
+
+      if (containsJoker(play.cards)) {
+        controlCost += 100;
+      }
+
+      if (effects.eightCut) {
+        controlCost += 80;
+      }
+
+      if (
+        play.cards.some(
+          (card) =>
+            !isJoker(card) &&
+            card.rank === controlRank,
+        )
+      ) {
+        controlCost += 60;
+      }
+
+      if (play.cards.length >= 4) {
+        controlCost += 40;
+      }
+
+      return {
+        play,
+        remainingGroupCount,
+        controlCost,
+      };
+    })
+    .sort((a, b) => {
+      if (
+        a.remainingGroupCount !==
+        b.remainingGroupCount
+      ) {
+        return (
+          a.remainingGroupCount -
+          b.remainingGroupCount
+        );
+      }
+
+      if (a.controlCost !== b.controlCost) {
+        return a.controlCost - b.controlCost;
+      }
+
+      if (
+        a.play.analysis.strength !==
+        b.play.analysis.strength
+      ) {
+        const difference =
+          a.play.analysis.strength -
+          b.play.analysis.strength;
+
+        return reverse
+          ? -difference
+          : difference;
+      }
+
+      return (
+        b.play.cards.length -
+        a.play.cards.length
+      );
+    })
+    .map(({ play }) => play);
+}
+
 function playState(state, play) {
   const actor = state.turn;
   const playedIds = new Set(
@@ -494,9 +622,11 @@ export function chooseHeadsUpPerfectPlay({
     return outcome;
   }
 
-  const rootPlays = orderPlays(
-    getLegalPlays(initialState),
-  );
+  const rootPlays = orderRootPlays({
+    plays: getLegalPlays(initialState),
+    hand: ownHand,
+    context: initialState.context,
+  });
 
   const rootActions = rootPlays.map(
     (play) => ({ type: "play", play }),
