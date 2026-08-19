@@ -3842,6 +3842,16 @@ button {
   text-shadow: none;
 }
 
+.roundNotebookScoreCell.positiveScore,
+.roundNotebookTotalCell.positiveScore {
+  color: #286243;
+}
+
+.roundNotebookScoreCell.negativeScore,
+.roundNotebookTotalCell.negativeScore {
+  color: #a33a32;
+}
+
 .roundScoreBreakdown {
   margin-top: 1.65cqw;
 }

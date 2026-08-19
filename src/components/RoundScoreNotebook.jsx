@@ -311,11 +311,6 @@ function RoundScoreNotebook({
               player,
               playerIndex,
             ) => {
-              const currentResult =
-                currentResults[
-                  playerIndex
-                ];
-
               return (
                 <div
                   className="roundNotebookPlayerRow"
@@ -335,13 +330,6 @@ function RoundScoreNotebook({
                       {player.name}
                     </span>
 
-                    {showResult &&
-                      currentResult?.place ===
-                        0 && (
-                        <strong className="roundWinnerMark">
-                          大富豪
-                        </strong>
-                      )}
                   </div>
 
                   {Array.from({
