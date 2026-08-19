@@ -1,14 +1,18 @@
 .presidentRulePage {
-  width: 100%;
-  min-height: 100vh;
+  min-height: 100svh;
+  padding: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
-  box-sizing: border-box;
-  color: #f7e7b8;
+  overflow: auto;
+  color: #f7f0dc;
   background:
-    radial-gradient(circle at 50% 35%, #591629 0, #260911 48%, #100609 100%);
+    radial-gradient(
+      circle at center,
+      rgba(89, 22, 41, 0.96),
+      rgba(16, 6, 9, 0.99)
+    );
+  font-family: "Noto Sans JP", sans-serif;
 }
 
 .presidentRuleFrame {
@@ -26,409 +30,205 @@
   align-items: center;
   justify-content: center;
   transform-origin: top left;
-  overflow: hidden;
-}
-
-.presidentRuleSheet {
-  width: calc(100% - 64px);
-  min-height: calc(100% - 64px);
-
-  padding: 46px 58px 42px;
-  box-sizing: border-box;
-
-  border: 1px solid #b68b3e;
-  border-radius: 24px;
-
-  background: rgba(25, 5, 11, 0.93);
-
-  box-shadow:
-    0 24px 80px rgba(0, 0, 0, 0.58),
-    inset 0 0 40px rgba(139, 34, 55, 0.16);
-}
-
-.presidentRuleHeader {
-  flex: 0 0 auto;
-
-  text-align: center;
-
-  border-bottom:
-    1px solid
-    rgba(229, 190, 93, 0.45);
-
-  padding-bottom: 22px;
-}
-
-.presidentRuleHeader p,
-.presidentRuleHeader span {
-  margin: 0;
-
-  color: #bd9650;
-
-  font-family:
-    "Cinzel",
-    serif;
-
-  font-size: 24px;
-  font-weight: 700;
-  letter-spacing: 0.28em;
-}
-
-.presidentRuleHeader h1 {
-  margin: 5px 0;
-
-  font-family:
-    "Noto Serif JP",
-    "Yu Mincho",
-    serif;
-
-  font-size: 64px;
-  font-weight: 900;
-  line-height: 1.1;
-  letter-spacing: 0.16em;
-}
-
-.presidentRuleGrid {
-  flex: 1;
-  min-height: 0;
-
-  display: grid;
-
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
-  grid-template-rows:
-    repeat(3, minmax(0, 1fr));
-
-  gap: 20px 24px;
-
-  margin-top: 26px;
-}
-
-.presidentRuleItem {
-  min-width: 0;
-  min-height: 0;
-
-  display: grid;
-
-  grid-template-columns:
-    64px minmax(0, 1fr);
-
-  gap: 22px;
-  align-items: center;
-
-  padding: 24px 28px;
-  box-sizing: border-box;
-
-  border:
-    1px solid
-    rgba(206, 164, 76, 0.38);
-
-  border-radius: 16px;
-
   background:
-    linear-gradient(
-      145deg,
-      rgba(91, 19, 34, 0.48),
-      rgba(48, 8, 17, 0.46)
+    radial-gradient(
+      circle at top,
+      rgba(91, 24, 43, 0.97),
+      rgba(18, 5, 10, 1)
     );
 }
 
-.presidentRuleNumber {
-  width: 62px;
-  height: 62px;
+.presidentRulePanel {
+  width: 1120px;
+  padding: 54px 68px 52px;
+  border: 3px solid #d8bd72;
+  border-radius: 34px;
+  background:
+    linear-gradient(
+      145deg,
+      rgba(54, 11, 23, 0.98),
+      rgba(20, 4, 10, 0.98)
+    );
+  box-shadow:
+    0 0 0 8px rgba(216, 189, 114, 0.1),
+    0 30px 80px rgba(0, 0, 0, 0.6),
+    inset 0 0 50px rgba(255, 230, 160, 0.05);
+}
 
+.presidentRuleHeader {
+  text-align: center;
+}
+
+.presidentRuleHeader > span {
+  display: block;
+  color: #d8bd72;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+}
+
+.presidentRuleHeader h1 {
+  margin: 8px 0 0;
+  font-family: "Cormorant Garamond", "Noto Serif JP", serif;
+  font-size: 58px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+}
+
+.presidentRuleHeader p {
+  margin: 18px 0 0;
+  color: rgba(247, 240, 220, 0.72);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.presidentRuleList {
+  margin-top: 42px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(3, auto);
+  gap: 18px;
+}
+
+.presidentRuleItem {
+  min-height: 150px;
+  padding: 22px 24px;
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: start;
+  gap: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.055);
+}
+
+.presidentRuleItem > strong {
+  width: 52px;
+  height: 52px;
   display: grid;
   place-items: center;
-
-  box-sizing: border-box;
-
-  border:
-    2px solid
-    rgba(235, 205, 118, 0.8);
-
+  border: 2px solid rgba(235, 205, 118, 0.8);
   border-radius: 50%;
-
-  color: #d8ae58;
-
-  font-family:
-    "Cinzel",
-    serif;
-
-  font-size: 38px;
-  font-weight: 800;
+  color: #ead078;
+  font-family: "Cormorant Garamond", serif;
+  font-size: 34px;
   line-height: 1;
 }
 
 .presidentRuleItem h2 {
-  margin: 0 0 12px;
-
-  color: #fff3ca;
-
-  font-family:
-    "Noto Serif JP",
-    "Yu Mincho",
-    serif;
-
-  font-size: 30px;
-  font-weight: 900;
-  line-height: 1.3;
+  margin: 0;
+  color: #fff8e7;
+  font-size: 23px;
+  line-height: 1.25;
 }
 
 .presidentRuleItem p {
-  margin: 0;
-
-  color:
-    rgba(
-      255,
-      239,
-      198,
-      0.88
-    );
-
-  font-size: 22px;
-  font-weight: 700;
+  margin: 10px 0 0;
+  color: rgba(247, 240, 220, 0.72);
+  font-size: 17px;
+  font-weight: 600;
   line-height: 1.65;
 }
 
-.presidentRuleConfirm {
-  flex: 0 0 auto;
-
-  width: 400px;
-  min-height: 72px;
-
+.presidentRuleConfirmButton {
   display: block;
-
-  margin: 26px auto 0;
-
-  border: 2px solid #d4a84c;
+  width: 280px;
+  min-height: 68px;
+  margin: 38px auto 0;
+  border: 2px solid #efd780;
   border-radius: 999px;
-
-  color: #fff0bd;
-
-  background:
-    linear-gradient(
-      180deg,
-      #8f2638,
-      #55101e
-    );
-
-  box-shadow:
-    0 10px 25px
-    rgba(0, 0, 0, 0.35);
-
-  font-size: 25px;
+  color: #321018;
+  background: linear-gradient(180deg, #f3dc8d, #cba64e);
+  font-size: 23px;
   font-weight: 900;
-  letter-spacing: 0.08em;
-
   cursor: pointer;
+  box-shadow: 0 10px 24px rgba(203, 166, 78, 0.28);
+  transition: transform 150ms ease, filter 150ms ease;
 }
 
-.presidentRuleConfirm:disabled {
-  cursor: wait;
-  opacity: 0.72;
+.presidentRuleConfirmButton:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
 }
 
-@media (max-width: 600px) {
-  .presidentRulePage {
-    padding: 4px;
-  }
-
-  .presidentRuleSheet {
-    width: calc(100% - 16px);
-    height: calc(100% - 16px);
-
-    padding: 32px 34px 28px;
-
-    border-radius: 18px;
-  }
-
-  .presidentRuleHeader {
-    padding-bottom: 18px;
-  }
-
-  .presidentRuleGrid {
-    gap: 16px 18px;
-    margin-top: 20px;
-  }
-
-  .presidentRuleItem {
-    grid-template-columns:
-      64px minmax(0, 1fr);
-
-    gap: 20px;
-
-    padding: 22px 24px;
-  }
-
-  .presidentRuleConfirm {
-    margin-top: 20px;
-  }
+.presidentRuleConfirmButton:disabled {
+  cursor: default;
+  opacity: 0.65;
 }
 
 @media (max-width: 600px) {
   .presidentRulePage {
-    width: 100%;
-    min-height: 100svh;
-
-    display: block;
-
-    padding: 12px;
-    box-sizing: border-box;
-
-    overflow-x: hidden;
-    overflow-y: auto;
+    padding: 10px;
   }
 
-  .presidentRuleFrame {
-    width: 100% !important;
-    height: auto !important;
+  .presidentRulePanel {
+    width: calc(100% - 32px);
+    min-height: calc(100% - 32px);
+    padding: 48px 42px 46px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border-radius: 42px;
   }
 
-  .presidentRuleCanvas {
-    position: relative;
-    top: auto;
-    left: auto;
-
-    width: 100%;
-    height: auto;
-
-    display: block;
-
-    transform: none !important;
-    overflow: visible;
-  }
-
-  .presidentRuleSheet {
-    width: 100%;
-    min-height: 0;
-
-    padding: 24px 14px 20px;
-    box-sizing: border-box;
-
-    border: 1px solid #b68b3e;
-    border-radius: 18px;
-
-    background:
-      linear-gradient(
-        145deg,
-        rgba(44, 8, 18, 0.98),
-        rgba(20, 4, 10, 0.98)
-      );
-
-    box-shadow:
-      0 0 0 4px
-        rgba(182, 139, 62, 0.08),
-      0 20px 50px
-        rgba(0, 0, 0, 0.55);
-  }
-
-  .presidentRuleHeader {
-    padding-bottom: 16px;
-
-    text-align: center;
-  }
-
-  .presidentRuleHeader p,
-  .presidentRuleHeader span {
-    display: block;
-
-    margin: 0;
-
-    font-size: 10px;
-    font-weight: 800;
-    letter-spacing: 0.25em;
+  .presidentRuleHeader > span {
+    font-size: 30px;
   }
 
   .presidentRuleHeader h1 {
-    margin: 6px 0;
-
-    font-size: 34px;
-    line-height: 1.1;
-    letter-spacing: 0.12em;
+    margin-top: 12px;
+    font-size: 78px;
   }
 
-  .presidentRuleGrid {
+  .presidentRuleHeader p {
+    margin-top: 24px;
+    font-size: 32px;
+    line-height: 1.5;
+  }
+
+  .presidentRuleList {
+    flex: 1 1 auto;
+    margin-top: 36px;
     display: grid;
-
-    grid-template-columns: 1fr;
-    grid-template-rows: none;
-
-    gap: 8px;
-
-    margin-top: 14px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: repeat(6, minmax(0, 1fr));
+    gap: 16px;
   }
 
-  .presidentRuleItem {
-    min-width: 0;
+  .presidentRuleItem,
+  .presidentRuleItem:last-child {
+    grid-column: auto;
     min-height: 0;
-
-    display: grid;
-
-    grid-template-columns:
-      42px minmax(0, 1fr);
-
-    gap: 12px;
+    grid-template-columns: 72px minmax(0, 1fr);
     align-items: center;
-
-    padding: 13px 12px;
-    box-sizing: border-box;
-
-    border:
-      1px solid
-      rgba(206, 164, 76, 0.22);
-
-    border-radius: 11px;
-
-    background:
-      linear-gradient(
-        145deg,
-        rgba(91, 19, 34, 0.42),
-        rgba(48, 8, 17, 0.46)
-      );
+    gap: 22px;
+    padding: 20px 30px;
+    border-radius: 28px;
   }
 
-  .presidentRuleNumber {
-    width: 38px;
-    height: 38px;
-
-    display: grid;
-    place-items: center;
-
-    border:
-      1px solid
-      rgba(235, 205, 118, 0.82);
-
-    border-radius: 50%;
-
-    font-size: 20px;
-    line-height: 1;
+  .presidentRuleItem > strong {
+    width: 82px;
+    height: 82px;
+    font-size: 52px;
   }
 
   .presidentRuleItem h2 {
-    margin: 0 0 5px;
-
-    font-size: 18px;
-    line-height: 1.3;
+    font-size: 42px;
+    line-height: 1.2;
   }
 
   .presidentRuleItem p {
-    margin: 0;
-
-    font-size: 14px;
+    margin-top: 14px;
+    font-size: 36px;
     font-weight: 700;
-    line-height: 1.55;
+    line-height: 1.45;
   }
 
-  .presidentRuleConfirm {
-    width: min(280px, 88%);
-    min-height: 52px;
-
-    display: block;
-
-    margin: 16px auto 0;
-
-    border-radius: 999px;
-
-    font-size: 16px;
+  .presidentRuleConfirmButton {
+    width: min(440px, 70%);
+    min-height: 88px;
+    margin-top: 28px;
+    font-size: 36px;
   }
 }
