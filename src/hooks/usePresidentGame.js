@@ -220,6 +220,29 @@ export default function usePresidentGame({
     currentPlayerIndex,
   ]);
 
+  /*
+  場が流れたら、
+  全プレイヤーのPASS表示を消す。
+  */
+  useEffect(() => {
+    if (playedCards.length !== 0) {
+      return;
+    }
+
+    const timerId = window.setTimeout(
+      () => {
+        setPassEffectPlayerIndexes([]);
+      },
+      500,
+    );
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [
+    playedCards.length,
+  ]);
+
   const hand = hands[0];
 
   const cpuCardKnowledge =

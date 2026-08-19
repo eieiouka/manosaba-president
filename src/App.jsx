@@ -22,6 +22,7 @@ import useCardAnimation from "./hooks/useCardAnimation";
 import useCardExchangeAnimation from "./hooks/useCardExchangeAnimation";
 import useGameScale from "./hooks/useGameScale";
 import usePresidentGame from "./hooks/usePresidentGame";
+import usePlayerTurnTimer from "./hooks/usePlayerTurnTimer";
 
 import {
   createExchangedHands,
@@ -239,6 +240,11 @@ function App() {
   const [gamePhase, setGamePhase] =
     useState(GAME_PHASES.PLAYING);
 
+  const [
+    hasPlayerTakenFirstTurn,
+    setHasPlayerTakenFirstTurn,
+  ] = useState(false);
+
   useEffect(() => {
     assetPreloadPromiseRef.current =
       preloadPresidentAssets();
@@ -356,6 +362,7 @@ function App() {
 
     toggleCardSelection,
     playSelectedCards,
+    playLeftmostCard,
     passTurn,
     startNextRound,
     completeCardExchange,
@@ -572,6 +579,8 @@ function App() {
       return;
     }
 
+    setHasPlayerTakenFirstTurn(true);
+
     animateCards({
       cards:
         selectedCards,
@@ -590,8 +599,47 @@ function App() {
       return;
     }
 
+    setHasPlayerTakenFirstTurn(true);
+
     passTurn();
   };
+
+  const isTurnTimerActive =
+    entryPhase === "playing" &&
+    gamePhase === GAME_PHASES.PLAYING &&
+    currentPlayerIndex === 0 &&
+    hasPlayerTakenFirstTurn &&
+    !isAnimating &&
+    !isRuleEffectPlaying &&
+    !isRoundFinished;
+
+  const handleTurnTimeout = () => {
+    if (!isTurnTimerActive) {
+      return;
+    }
+
+    if (playedCards.length > 0) {
+      handlePassTurn();
+      return;
+    }
+
+    const leftmostCard = hand[0];
+
+    if (!leftmostCard) {
+      return;
+    }
+
+    animateCards({
+      cards: [leftmostCard],
+      onLanding: playLeftmostCard,
+    });
+  };
+
+  const turnSeconds =
+    usePlayerTurnTimer({
+      active: isTurnTimerActive,
+      onTimeout: handleTurnTimeout,
+    });
 
   const handleToggleCard = (
     card,
@@ -717,6 +765,8 @@ function App() {
     );
 
     setExchangeSelectedCardIds([]);
+
+    setHasPlayerTakenFirstTurn(false);
 
     /*
       ROUNDを進める。
@@ -1086,6 +1136,11 @@ function App() {
                   }
                   canPass={
                     canPass
+                  }
+                  turnSeconds={
+                    isTurnTimerActive
+                      ? turnSeconds
+                      : null
                   }
                   onPlayCard={
                     handlePlayCard

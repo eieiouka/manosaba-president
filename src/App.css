@@ -3279,9 +3279,12 @@ button {
   }
 
   .fieldCards {
+    position: absolute;
+    top: 50%;
+    left: 50%;
     width: 30cqw;
     height: 36cqw;
-    transform: translateY(-2cqw);
+    transform: translate(-50%, -50%);
   }
 
   .fieldCard {
