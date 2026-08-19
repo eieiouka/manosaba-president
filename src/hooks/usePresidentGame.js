@@ -629,6 +629,10 @@ export default function usePresidentGame({
     );
   }
 
+  function clearCardSelection() {
+    setSelectedCardIds([]);
+  }
+
   function playSelectedCards() {
     if (!canPlaySelectedCards) {
       return;
@@ -936,6 +940,7 @@ export default function usePresidentGame({
     isRoundFinished,
 
     toggleCardSelection,
+    clearCardSelection,
     playSelectedCards,
     playLeftmostCard,
     passTurn,

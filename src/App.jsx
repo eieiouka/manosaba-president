@@ -362,6 +362,7 @@ function App() {
     isRoundFinished,
 
     toggleCardSelection,
+    clearCardSelection,
     playSelectedCards,
     playLeftmostCard,
     passTurn,
@@ -721,6 +722,37 @@ function App() {
     );
   };
 
+  const handleClearCardSelection = () => {
+    if (!isMobileLayout) {
+      return;
+    }
+
+    if (isExchangePhase) {
+      setExchangeSelectedCardIds([]);
+      return;
+    }
+
+    clearCardSelection();
+  };
+
+  const handleGameTableClick = (
+    event,
+  ) => {
+    if (!isMobileLayout) {
+      return;
+    }
+
+    if (
+      event.target.closest(
+        ".playingCard, button, .roundNotebook, .finalResultPanel",
+      )
+    ) {
+      return;
+    }
+
+    handleClearCardSelection();
+  };
+
   /*
     =====================================
     戦績保存
@@ -975,7 +1007,12 @@ function App() {
             </button>
           </header>
 
-          <section className="gameTable">
+          <section
+            className="gameTable"
+            onClick={
+              handleGameTableClick
+            }
+          >
             {/*
               革命・8切り・上がり等
             */}
@@ -1141,6 +1178,9 @@ function App() {
                           }
                           onToggle={
                             handleToggleCard
+                          }
+                          onClearSelection={
+                            handleClearCardSelection
                           }
                           key={
                             card.id

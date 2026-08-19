@@ -10,6 +10,7 @@ function PlayingCard({
   playable,
   playableVariant = "play",
   onToggle,
+  onClearSelection,
 }) {
   const cardLabel =
     getCardLabel(card);
@@ -22,11 +23,23 @@ function PlayingCard({
         : "playableCard";
 
   const handleClick = () => {
+    const isMobileLayout =
+      window.matchMedia(
+        "(max-width: 600px)",
+      ).matches;
+
     /*
       選択済みカードは
-      いつでも解除可能。
+      PCでは再クリックで解除。
+
+      スマホでは選択を維持し、
+      余白などから一括解除する。
     */
     if (selected) {
+      if (isMobileLayout) {
+        return;
+      }
+
       onToggle(card);
       return;
     }
@@ -36,6 +49,10 @@ function PlayingCard({
       選択できない。
     */
     if (!playable) {
+      if (isMobileLayout) {
+        onClearSelection?.();
+      }
+
       return;
     }
 
