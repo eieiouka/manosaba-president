@@ -2,7 +2,7 @@ import {
   getRoundResults,
 } from "./RoundScoreNotebook";
 
-const TOTAL_ROUNDS = 5;
+const TOTAL_ROUNDS = 7;
 
 const players = [
   {
@@ -55,7 +55,7 @@ function FinalMatchResult({
   onBackToHub,
 }) {
   /*
-    5回戦目がsetStateの都合で
+    7回戦目がsetStateの都合で
     savedRoundsへ入る前でも、
     必ず現在の結果を含める。
   */
@@ -103,7 +103,7 @@ function FinalMatchResult({
     );
 
   /*
-    5回戦合計。
+    7回戦合計。
   */
   const totalScores =
     players.map(
@@ -125,7 +125,7 @@ function FinalMatchResult({
     合計点の高い順。
   */
     /*
-    第5回戦の結果。
+    第7回戦の結果。
 
     最終合計点が同点だった場合の
     タイブレークに使う。
@@ -151,7 +151,7 @@ function FinalMatchResult({
     最終順位。
 
     1. 合計点が高い方
-    2. 同点なら第5回戦の順位が高い方
+    2. 同点なら第7回戦の順位が高い方
   */
   const sortedPlayers =
     players
@@ -192,7 +192,7 @@ function FinalMatchResult({
 
           /*
             同点なら
-            第5回戦の着順。
+            第7回戦の着順。
           */
           return (
             a.finalRoundPlace -

@@ -4,7 +4,7 @@ import {
   useState,
 } from "react";
 
-const TOTAL_ROUNDS = 5;
+const TOTAL_ROUNDS = 7;
 
 const players = [
   {
@@ -51,7 +51,7 @@ function getScoreByPlace(
     baseScores[place] ?? 0;
 
   /*
-    最終5回戦だけ、
+    最終7回戦だけ、
     1位にさらに+1点。
   */
   if (

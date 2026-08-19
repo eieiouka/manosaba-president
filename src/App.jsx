@@ -15,6 +15,8 @@ import CardExchangeControls from "./components/CardExchangeControls";
 
 import RoundScoreNotebook from "./components/RoundScoreNotebook";
 import FinalMatchResult from "./components/FinalMatchResult";
+import PresidentStartScreen from "./components/PresidentStartScreen";
+import PresidentRuleScreen from "./components/PresidentRuleScreen";
 
 import useCardAnimation from "./hooks/useCardAnimation";
 import useCardExchangeAnimation from "./hooks/useCardExchangeAnimation";
@@ -40,7 +42,12 @@ import {
   playGameSound,
 } from "./utils/gameAudio";
 
-const TOTAL_ROUNDS = 5;
+import {
+  preloadPresidentAssets,
+  warmUpPresidentAudio,
+} from "./utils/presidentPreload";
+
+const TOTAL_ROUNDS = 7;
 
 const GAME_PHASES = {
   PLAYING: "playing",
@@ -193,6 +200,12 @@ function App() {
   const championVoicePlayedRef =
     useRef(false);
 
+  const assetPreloadPromiseRef =
+    useRef(null);
+
+  const [entryPhase, setEntryPhase] =
+    useState("start");
+
   const [
     debugMode,
     setDebugMode,
@@ -200,6 +213,11 @@ function App() {
 
   const [gamePhase, setGamePhase] =
     useState(GAME_PHASES.PLAYING);
+
+  useEffect(() => {
+    assetPreloadPromiseRef.current =
+      preloadPresidentAssets();
+  }, []);
 
   const [
     exchangeSelectedCardIds,
@@ -217,7 +235,7 @@ function App() {
   ] = useState([]);
 
   /*
-    5回戦すべての集計が終わった時だけ、
+    7回戦すべての集計が終わった時だけ、
     総合優勝者のChampionボイスを一度流す。
   */
   useEffect(() => {
@@ -320,8 +338,8 @@ function App() {
     animateCpuCards,
     playerRanks,
     isGameActive:
-      gamePhase ===
-      GAME_PHASES.PLAYING,
+      entryPhase === "playing" &&
+      gamePhase === GAME_PHASES.PLAYING,
   });
 
   useEffect(() => {
@@ -736,7 +754,7 @@ function App() {
 
   /*
     =====================================
-    5回戦終了
+    7回戦終了
     =====================================
   */
   const handleFinishMatch = () => {
@@ -746,6 +764,40 @@ function App() {
       GAME_PHASES.FINAL_RESULT,
     );
   };
+
+  const handleOpenRules = () => {
+    setEntryPhase("rules");
+  };
+
+  const handleConfirmRules = async () => {
+    await Promise.allSettled([
+      assetPreloadPromiseRef.current ??
+        preloadPresidentAssets(),
+      warmUpPresidentAudio(),
+    ]);
+
+    await new Promise((resolve) => {
+      window.setTimeout(resolve, 300);
+    });
+
+    setEntryPhase("playing");
+  };
+
+  if (entryPhase === "start") {
+    return (
+      <PresidentStartScreen
+        onStart={handleOpenRules}
+      />
+    );
+  }
+
+  if (entryPhase === "rules") {
+    return (
+      <PresidentRuleScreen
+        onConfirm={handleConfirmRules}
+      />
+    );
+  }
 
   return (
     <main className="gamePage">
@@ -1102,7 +1154,7 @@ function App() {
               )}
 
             {/*
-              5回戦終了後の
+              7回戦終了後の
               最終結果。
             */}
             {gamePhase ===

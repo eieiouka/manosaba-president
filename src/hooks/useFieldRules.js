@@ -228,10 +228,14 @@ export default function useFieldRules({
     }
 
     if (effects.revolution) {
+      const revolutionEvent = revolution
+        ? "revolutionReturn"
+        : "revolution";
+
       setRevolution(
         (current) => !current,
       );
-      events.push("revolution");
+      events.push(revolutionEvent);
     }
 
     if (effects.eightCut) {

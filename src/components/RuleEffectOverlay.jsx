@@ -2,6 +2,7 @@ import "./RuleEffectOverlay.css";
 
 const EFFECT_TEXT = {
   revolution: "革命",
+  revolutionReturn: "革命返し",
   shibari: "縛り",
   gekiShibari: "激縛り",
   elevenBack: "イレブンバック",

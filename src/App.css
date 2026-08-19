@@ -1580,7 +1580,7 @@ button {
 
   grid-template-columns:
     325px
-    repeat(5, 1fr)
+    repeat(7, 1fr)
     145px;
 
   border-top:
@@ -2516,7 +2516,7 @@ button {
 
   grid-template-columns:
     260px
-    repeat(5, 1fr)
+    repeat(7, 1fr)
     135px;
 
   border-top:
