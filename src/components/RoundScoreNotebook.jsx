@@ -242,73 +242,46 @@ function RoundScoreNotebook({
     <div className="roundNotebookOverlay">
       <section className="roundNotebook">
         <div className="roundNotebookBinding">
-          <span />
-          <span />
-          <span />
-          <span />
+          {Array.from({
+            length: 12,
+          }).map((_, index) => (
+            <span key={index} />
+          ))}
         </div>
 
         <header className="roundNotebookHeader">
           <div>
             <span className="roundNotebookSubTitle">
-              PRESIDENT RECORD NOTE
+              PRESIDENT SCORE NOTE
             </span>
 
             <h2>
-              第{roundNumber}回戦
+              {roundNumber}回戦
             </h2>
           </div>
 
           <div className="roundNotebookRule">
             <div className="roundNotebookRuleRow">
-              <span>
-                大富豪
-              </span>
-
-              <strong>
-                +2
-              </strong>
-
-              <span>
-                富豪
-              </span>
-
-              <strong>
-                +1
-              </strong>
-            </div>
-
-            <div className="roundNotebookRuleRow">
-              <span>
-                貧民
-              </span>
-
-              <strong>
-                -1
-              </strong>
-
-              <span>
-                大貧民
-              </span>
-
-              <strong>
-                -2
-              </strong>
+              <span>大富豪 +2</span>
+              <span>富豪 +1</span>
+              <span>貧民 -1</span>
+              <span>大貧民 -2</span>
             </div>
 
             {roundNumber ===
               TOTAL_ROUNDS && (
-              <p className="finalRoundBonus">
-                FINAL BONUS：
-                大富豪 +1
-              </p>
+              <div className="roundNotebookRuleRow">
+                <span>
+                  最終戦：大富豪 +1
+                </span>
+              </div>
             )}
           </div>
         </header>
 
         <div className="roundNotebookTable presidentNotebookTable">
           <div className="roundNotebookCorner">
-            PLAYER
+            プレイヤー
           </div>
 
           {Array.from({
@@ -330,7 +303,7 @@ function RoundScoreNotebook({
           )}
 
           <div className="roundNotebookTotalHeader">
-            TOTAL
+            合計
           </div>
 
           {players.map(
@@ -461,61 +434,68 @@ function RoundScoreNotebook({
           )}
         </div>
 
-        <div className="presidentRoundRanks">
-          {[...currentResults]
-            .sort(
-              (a, b) =>
-                a.place -
-                b.place,
-            )
-            .map((result) => {
-              const player =
-                players[
-                  result.playerIndex
-                ];
+        <section className="roundScoreBreakdown">
+          <h3>今回の結果</h3>
 
-              return (
-                <div
-                  className="presidentRoundRank"
-                  key={player.id}
-                >
-                  <span className="presidentRankPlace">
-                    {result.place + 1}
-                    位
-                  </span>
+          <div className="roundScoreBreakdownGrid">
+            <div
+              className={`roundScoreStep ${
+                showResult
+                  ? "visibleRoundScoreStep"
+                  : ""
+              }`}
+            >
+              <span>階級</span>
 
-                  <img
-                    className="presidentRankPortrait"
-                    src={player.image}
-                    alt=""
-                    draggable="false"
-                  />
+              <div className="roundScoreStepValues presidentRoundRankValues">
+                {currentResults.map(
+                  (result) => (
+                    <strong
+                      key={result.playerIndex}
+                    >
+                      {showResult
+                        ? result.rank
+                        : ""}
+                    </strong>
+                  ),
+                )}
+              </div>
+            </div>
 
-                  <strong>
-                    {player.name}
-                  </strong>
+            <div
+              className={`roundScoreStep ${
+                showResult
+                  ? "visibleRoundScoreStep"
+                  : ""
+              }`}
+            >
+              <span>得点</span>
 
-                  <em>
-                    {result.rank}
-                  </em>
-
-                  <b
-                    className={
-                      result.score > 0
-                        ? "positiveScore"
-                        : result.score < 0
-                          ? "negativeScore"
-                          : ""
-                    }
-                  >
-                    {formatScore(
-                      result.score,
-                    )}
-                  </b>
-                </div>
-              );
-            })}
-        </div>
+              <div className="roundScoreStepValues">
+                {currentResults.map(
+                  (result) => (
+                    <strong
+                      className={
+                        result.score > 0
+                          ? "positiveScore"
+                          : result.score < 0
+                            ? "negativeScore"
+                            : ""
+                      }
+                      key={result.playerIndex}
+                    >
+                      {showResult
+                        ? formatScore(
+                            result.score,
+                          )
+                        : ""}
+                    </strong>
+                  ),
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
 
         <footer className="roundNotebookFooter">
           <div className="roundNotebookProgress">

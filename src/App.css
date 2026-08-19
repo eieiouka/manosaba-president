@@ -3502,3 +3502,732 @@ button {
     width: 100%;
   }
 }
+
+/* =========================================
+   七並べ型：1戦ごとのリザルト
+   ========================================= */
+
+.roundNotebookOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 3.2cqw;
+
+  background: rgba(4, 13, 15, 0.7);
+  backdrop-filter: blur(4px);
+}
+
+.roundNotebook {
+  position: relative;
+
+  width: 88cqw;
+  min-height: 48cqw;
+
+  padding:
+    3.2cqw
+    3cqw
+    2.4cqw;
+
+  overflow: hidden;
+
+  color: #30281f;
+
+  border: 0.2cqw solid #c7b78f;
+  border-radius:
+    0.8cqw
+    1.5cqw
+    1.5cqw
+    0.8cqw;
+
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 2.85cqw,
+      rgba(103, 137, 164, 0.2) 2.9cqw,
+      rgba(103, 137, 164, 0.2) 3cqw
+    ),
+    #f4eedc;
+
+  box-shadow:
+    0 1.6cqw 3.7cqw
+      rgba(0, 0, 0, 0.46),
+    inset 0 0 2.3cqw
+      rgba(112, 88, 46, 0.12);
+
+  animation:
+    presidentNotebookEnter
+    550ms
+    cubic-bezier(0.18, 0.86, 0.28, 1.12)
+    both;
+}
+
+@keyframes presidentNotebookEnter {
+  from {
+    opacity: 0;
+    transform:
+      translateX(9cqw)
+      rotate(1.5deg);
+  }
+
+  to {
+    opacity: 1;
+    transform:
+      translateX(0)
+      rotate(0);
+  }
+}
+
+.roundNotebookBinding {
+  display: none;
+}
+
+.roundNotebookHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2cqw;
+
+  min-height: 0;
+  margin-bottom: 1.8cqw;
+  padding-bottom: 0;
+
+  border-bottom:
+    0.2cqw double
+    rgba(82, 65, 44, 0.48);
+}
+
+.roundNotebookSubTitle {
+  display: block;
+
+  margin-bottom: 0;
+
+  color: #76654d;
+
+  font-family:
+    "Cormorant Garamond",
+    serif;
+
+  font-size: 1.25cqw;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.roundNotebookHeader h2 {
+  margin: 0;
+
+  color: #30281f;
+
+  font-family:
+    "Noto Sans JP",
+    sans-serif;
+
+  font-size: 2.8cqw;
+  font-weight: 900;
+  letter-spacing: normal;
+}
+
+.roundNotebookRule {
+  position: static;
+
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+
+  min-width: 0;
+
+  gap:
+    0.5cqw
+    1.2cqw;
+
+  padding: 0 0 0.6cqw;
+
+  border: none;
+  background: transparent;
+
+  font-size: 1.05cqw;
+  font-weight: 700;
+}
+
+.roundNotebookRuleRow {
+  display: flex;
+  justify-content: flex-end;
+
+  min-height: 0;
+
+  gap:
+    0.5cqw
+    1.2cqw;
+
+  color: #30281f;
+
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+.roundNotebookTable {
+  display: grid;
+
+  grid-template-columns:
+    14cqw
+    repeat(7, minmax(5.4cqw, 1fr))
+    7.7cqw;
+
+  border-top:
+    0.13cqw solid
+    rgba(79, 67, 50, 0.54);
+
+  border-left:
+    0.13cqw solid
+    rgba(79, 67, 50, 0.54);
+}
+
+.roundNotebookPlayerRow {
+  display: contents;
+}
+
+.roundNotebookCorner,
+.roundNotebookRoundHeader,
+.roundNotebookTotalHeader,
+.roundNotebookPlayerName,
+.roundNotebookScoreCell,
+.roundNotebookTotalCell {
+  min-height: 4.1cqw;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-right:
+    0.13cqw solid
+    rgba(79, 67, 50, 0.4);
+
+  border-bottom:
+    0.13cqw solid
+    rgba(79, 67, 50, 0.4);
+}
+
+.roundNotebookCorner,
+.roundNotebookRoundHeader,
+.roundNotebookTotalHeader {
+  min-height: 3.2cqw;
+
+  color: #30281f;
+  background: rgba(132, 112, 77, 0.13);
+
+  font-family: inherit;
+  font-size: 1.05cqw;
+  font-weight: 900;
+  letter-spacing: normal;
+}
+
+.roundNotebookTotalHeader {
+  background: rgba(117, 89, 43, 0.25);
+}
+
+.currentRoundHeader {
+  color: #fff8df;
+  background: #80683e;
+}
+
+.roundNotebookPlayerName {
+  position: relative;
+
+  justify-content: flex-start;
+
+  gap: 0.65cqw;
+
+  padding:
+    0
+    0.9cqw;
+
+  color: #30281f;
+
+  font-family: inherit;
+  font-size: 1.2cqw;
+  font-weight: 900;
+}
+
+.roundNotebookPlayerIllustration {
+  width: 3.3cqw;
+  height: 3.3cqw;
+  flex: 0 0 3.3cqw;
+
+  object-fit: cover;
+
+  border:
+    0.13cqw solid #91692c;
+  border-radius: 50%;
+}
+
+.roundNotebookPlayerName
+  .roundWinnerMark {
+  margin-left: auto;
+
+  padding:
+    0.2cqw
+    0.45cqw;
+
+  color: #fff5c9;
+  background: #917332;
+
+  border: none;
+  border-radius: 0.3cqw;
+
+  font-family: inherit;
+  font-size: 0.75cqw;
+  line-height: 1;
+  letter-spacing: normal;
+
+  transform: none;
+}
+
+.roundNotebookScoreCell,
+.roundNotebookTotalCell {
+  color: #4b3820;
+
+  font-family:
+    "Cinzel",
+    "Cormorant Garamond",
+    serif;
+
+  font-size: clamp(30px, 2.7cqw, 48px);
+  font-weight: 900;
+  font-variant-numeric: tabular-nums;
+}
+
+.currentRoundScoreCell {
+  background: rgba(214, 182, 95, 0.16);
+
+  animation:
+    currentScorePulse
+    1.2s
+    ease-in-out
+    infinite
+    alternate;
+}
+
+.roundNotebookTotalCell {
+  color: #4b3820;
+
+  background: rgba(117, 89, 43, 0.16);
+
+  font-size: clamp(34px, 3cqw, 52px);
+  text-shadow: none;
+}
+
+.roundScoreBreakdown {
+  margin-top: 1.65cqw;
+}
+
+.roundScoreBreakdown h3 {
+  margin:
+    0
+    0
+    0.8cqw;
+
+  font-size: 1.35cqw;
+}
+
+.roundScoreBreakdownGrid {
+  display: grid;
+  gap: 0.45cqw;
+}
+
+.roundScoreStep {
+  display: grid;
+
+  grid-template-columns:
+    14cqw
+    1fr;
+
+  align-items: center;
+
+  min-height: 2.85cqw;
+
+  padding:
+    0
+    1cqw;
+
+  opacity: 0;
+  transform: translateX(1.7cqw);
+
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
+}
+
+.visibleRoundScoreStep {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.roundScoreStep > span {
+  font-size: 1.1cqw;
+  font-weight: 800;
+}
+
+.roundScoreStepValues {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, 1fr);
+
+  text-align: center;
+
+  font-family:
+    "Cinzel",
+    "Cormorant Garamond",
+    serif;
+
+  font-size: clamp(24px, 1.8cqw, 32px);
+  font-weight: 900;
+}
+
+.presidentRoundRankValues {
+  font-family:
+    "Noto Sans JP",
+    sans-serif;
+
+  font-size: 1.35cqw;
+}
+
+.roundNotebookFooter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-top: 1.6cqw;
+}
+
+.roundNotebookProgress {
+  display: flex;
+  gap: 0.65cqw;
+}
+
+.roundNotebookProgress span {
+  width: 1.1cqw;
+  height: 1.1cqw;
+
+  border:
+    0.13cqw solid #796d58;
+  border-radius: 50%;
+
+  background: transparent;
+}
+
+.roundNotebookProgress
+  .completedRoundDot {
+  border-color: #80683e;
+  background: #80683e;
+  box-shadow: none;
+}
+
+.roundNotebookNextButton {
+  min-width: 14cqw;
+  min-height: 3.85cqw;
+  height: auto;
+
+  padding:
+    0
+    2cqw;
+
+  color: #fff8e7;
+
+  border:
+    0.13cqw solid #c8ad73;
+  border-radius: 0.65cqw;
+
+  background:
+    linear-gradient(
+      180deg,
+      #947944,
+      #68522d
+    );
+
+  font-family: inherit;
+  font-size: 1.3cqw;
+  font-weight: 900;
+  letter-spacing: normal;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 0.47cqw 0 #46351f;
+}
+
+.roundNotebookNextButton:hover:not(
+    :disabled
+  ) {
+  transform: translateY(-0.13cqw);
+
+  filter: none;
+
+  box-shadow:
+    0 0.6cqw 0 #46351f;
+}
+
+.roundNotebookNextButton:active:not(
+    :disabled
+  ) {
+  transform: translateY(0.27cqw);
+
+  box-shadow:
+    0 0.2cqw 0 #46351f;
+}
+
+.roundNotebookNextButton:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+@media (max-width: 600px) {
+  .roundNotebookOverlay {
+    position: fixed;
+    inset: 0;
+
+    padding: 5cqw 4cqw;
+
+    align-items: flex-start;
+
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .roundNotebook {
+    width: 100%;
+    min-height: 145cqw;
+
+    margin: 6cqw auto;
+
+    padding:
+      7cqw
+      2cqw
+      6cqw;
+
+    overflow: visible;
+
+    border-width: 0.5cqw;
+    border-radius:
+      2cqw
+      4cqw
+      4cqw
+      2cqw;
+
+    background: #f4eedc;
+  }
+
+  .roundNotebookHeader {
+    display: block;
+
+    margin-bottom: 4cqw;
+    padding-bottom: 2cqw;
+  }
+
+  .roundNotebookSubTitle {
+    font-size: 3cqw;
+  }
+
+  .roundNotebookHeader h2 {
+    margin-top: 1cqw;
+    font-size: 6cqw;
+  }
+
+  .roundNotebookRule {
+    margin-top: 2.5cqw;
+    padding-bottom: 0;
+
+    justify-content: flex-start;
+
+    gap:
+      1.5cqw
+      3cqw;
+
+    font-size: 2.7cqw;
+    line-height: 1.5;
+  }
+
+  .roundNotebookRuleRow {
+    justify-content: flex-start;
+    gap: 2cqw;
+
+    width: 100%;
+  }
+
+  .roundNotebookTable {
+    width: calc(100% + 1cqw);
+    min-width: 0;
+
+    margin-left: -0.5cqw;
+
+    grid-template-columns:
+      15cqw
+      repeat(7, minmax(0, 1fr))
+      10cqw;
+
+    overflow: hidden;
+  }
+
+  .roundNotebookCorner,
+  .roundNotebookRoundHeader,
+  .roundNotebookTotalHeader,
+  .roundNotebookPlayerName,
+  .roundNotebookScoreCell,
+  .roundNotebookTotalCell {
+    min-height: 14cqw;
+  }
+
+  .roundNotebookCorner,
+  .roundNotebookRoundHeader,
+  .roundNotebookTotalHeader {
+    min-height: 8cqw;
+    font-size: 2.8cqw;
+  }
+
+  .roundNotebookPlayerName {
+    flex-direction: column;
+    justify-content: center;
+
+    gap: 0.8cqw;
+
+    padding: 1.5cqw 0.5cqw;
+
+    font-size: 2.7cqw;
+    line-height: 1.15;
+    text-align: center;
+  }
+
+  .roundNotebookPlayerIllustration {
+    width: 9cqw;
+    height: 9cqw;
+    flex: 0 0 9cqw;
+  }
+
+  .roundNotebookPlayerName > span:not(
+      .roundWinnerMark
+    ) {
+    display: block;
+
+    max-width: 15cqw;
+
+    font-size: 2.7cqw;
+    line-height: 1.15;
+    white-space: normal;
+  }
+
+  .roundNotebookPlayerName
+    .roundWinnerMark {
+    display: block;
+
+    margin: 0;
+
+    padding:
+      0.45cqw
+      1cqw;
+
+    font-size: 2.2cqw;
+    white-space: nowrap;
+  }
+
+  .roundNotebookScoreCell,
+  .roundNotebookTotalCell {
+    min-width: 0;
+
+    padding:
+      0
+      0.3cqw;
+
+    font-size:
+      clamp(14px, 4.1cqw, 23px);
+
+    font-weight: 800;
+    line-height: 1;
+    letter-spacing: -0.04em;
+    white-space: nowrap;
+  }
+
+  .roundNotebookTotalCell {
+    font-size:
+      clamp(14px, 4.2cqw, 24px);
+
+    letter-spacing: -0.06em;
+  }
+
+  .roundScoreBreakdown {
+    margin-top: 5cqw;
+  }
+
+  .roundScoreBreakdown h3 {
+    margin:
+      0
+      0
+      2.5cqw;
+
+    font-size: 4cqw;
+  }
+
+  .roundScoreBreakdownGrid {
+    gap: 1.5cqw;
+  }
+
+  .roundScoreStep {
+    grid-template-columns:
+      28cqw
+      minmax(0, 1fr);
+
+    min-height: 10cqw;
+
+    padding:
+      1cqw
+      2cqw;
+  }
+
+  .roundScoreStep > span {
+    font-size: 3.2cqw;
+  }
+
+  .roundScoreStepValues {
+    font-size:
+      clamp(18px, 4.5cqw, 25px);
+
+    line-height: 1;
+    letter-spacing: -0.04em;
+  }
+
+  .presidentRoundRankValues {
+    font-size: 3.1cqw;
+  }
+
+  .roundNotebookFooter {
+    margin-top: 5cqw;
+  }
+
+  .roundNotebookProgress {
+    gap: 1.5cqw;
+  }
+
+  .roundNotebookProgress span {
+    width: 3cqw;
+    height: 3cqw;
+    border-width: 0.35cqw;
+  }
+
+  .roundNotebookNextButton {
+    min-width: 29cqw;
+    min-height: 11cqw;
+
+    padding:
+      0
+      4cqw;
+
+    border-radius: 1.8cqw;
+
+    font-size: 3.5cqw;
+  }
+}
