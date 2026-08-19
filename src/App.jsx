@@ -735,6 +735,47 @@ function App() {
     clearCardSelection();
   };
 
+  const handleMobileCardTouch = (
+    cardId,
+  ) => {
+    if (!isMobileLayout) {
+      return;
+    }
+
+    const selectedIds =
+      isExchangePhase
+        ? exchangeSelectedCardIds
+        : selectedCardIds;
+
+    if (selectedIds.includes(cardId)) {
+      return;
+    }
+
+    const playableIds =
+      isExchangePhase
+        ? exchangePlayableCardIds
+        : playableCardIds;
+
+    if (!playableIds.includes(cardId)) {
+      handleClearCardSelection();
+      return;
+    }
+
+    const touchedCard =
+      hand.find(
+        (card) =>
+          card.id === cardId,
+      );
+
+    if (!touchedCard) {
+      return;
+    }
+
+    handleToggleCard(
+      touchedCard,
+    );
+  };
+
   const handleGameTableClick = (
     event,
   ) => {
@@ -978,6 +1019,10 @@ function App() {
             <button
               className="hubButton"
               type="button"
+              onClick={() => {
+                window.location.href =
+                  "https://manosaba-cardgame-hub.vercel.app/";
+              }}
             >
               ← HUBへ戻る
             </button>
@@ -1181,6 +1226,9 @@ function App() {
                           }
                           onClearSelection={
                             handleClearCardSelection
+                          }
+                          onMobileTouch={
+                            handleMobileCardTouch
                           }
                           key={
                             card.id
