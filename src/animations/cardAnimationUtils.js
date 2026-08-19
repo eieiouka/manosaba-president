@@ -24,18 +24,61 @@ const CPU_PANEL_SELECTORS = {
   3: ".playerRight",
 };
 
+const preloadedCardImages =
+  new Map();
+
 function preloadImage(source) {
-  return new Promise((resolve) => {
-    const image = new Image();
+  const cachedEntry =
+    preloadedCardImages.get(
+      source,
+    );
 
-    image.onload = resolve;
-    image.onerror = resolve;
-    image.src = source;
+  if (cachedEntry) {
+    return cachedEntry.promise;
+  }
 
-    if (image.complete) {
-      resolve();
-    }
-  });
+  const image = new Image();
+
+  image.decoding = "sync";
+
+  const promise =
+    new Promise((resolve) => {
+      let finished = false;
+
+      const finish = async () => {
+        if (finished) {
+          return;
+        }
+
+        finished = true;
+
+        try {
+          await image.decode();
+        } catch {
+          // decode非対応・失敗時もゲームは続行する。
+        }
+
+        resolve(source);
+      };
+
+      image.onload = finish;
+      image.onerror = finish;
+      image.src = source;
+
+      if (image.complete) {
+        finish();
+      }
+    });
+
+  preloadedCardImages.set(
+    source,
+    {
+      image,
+      promise,
+    },
+  );
+
+  return promise;
 }
 
 export function preloadCardImages(cards) {
