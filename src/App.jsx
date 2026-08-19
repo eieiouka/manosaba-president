@@ -629,7 +629,7 @@ function App() {
       () => {
         autoPassActionRef.current?.();
       },
-      600,
+      700,
     );
 
     return () => {
