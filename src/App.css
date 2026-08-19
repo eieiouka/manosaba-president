@@ -3184,6 +3184,12 @@ button {
     margin-left: 2cqw;
   }
 
+  .playerPortraitSlot
+    .passAvatarEffect {
+    inset: 0;
+    font-size: 2.8cqw;
+  }
+
   .playerTop .playerInformation,
   .playerLeft .playerInformation,
   .playerRight .playerInformation,
@@ -3247,11 +3253,11 @@ button {
   .opponentFinishedRank {
     grid-area: hand;
     width: 29cqw;
-    height: 13.5cqw;
+    height: 10.5cqw;
   }
 
   .opponentFinishedRank span {
-    font-size: 5cqw;
+    font-size: 3.8cqw;
   }
 
   /* 中央の場を横幅いっぱいにする */
@@ -3427,11 +3433,15 @@ button {
 
   .playerFinishedRank {
     width: 100%;
-    height: 47cqw;
+    height:
+      calc(
+        var(--hand-card-width) *
+        1.5
+      );
   }
 
   .playerFinishedRank span {
-    font-size: 11cqw;
+    font-size: 8cqw;
   }
 
   /* 操作ボタンを手札の下で横並びにする */

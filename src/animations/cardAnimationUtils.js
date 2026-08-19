@@ -11,6 +11,8 @@ const FIELD_WIDTH = 540;
 const FIELD_HEIGHT = 420;
 
 const FIELD_CARD_WIDTH = 210;
+const MOBILE_FIELD_CARD_WIDTH_RATIO =
+  0.27;
 const FIELD_CARD_TOP = 37;
 const FIELD_CARD_HEIGHT = 315;
 
@@ -137,8 +139,16 @@ function getDestination({
     sourceRect.top +
     sourceRect.height / 2;
 
+  const isMobileLayout =
+    window.matchMedia(
+      "(max-width: 600px)",
+    ).matches;
+
   const destinationWidth =
-    FIELD_CARD_WIDTH * scaleX;
+    isMobileLayout
+      ? fieldRect.width *
+        MOBILE_FIELD_CARD_WIDTH_RATIO
+      : FIELD_CARD_WIDTH * scaleX;
 
   return {
     moveX:

@@ -196,3 +196,71 @@
     opacity: 0;
   }
 }
+
+@media (max-width: 600px) {
+  .ruleEffectOverlay {
+    grid-area: field;
+  }
+
+  .ruleEffectContent {
+    gap: 2.5cqw;
+  }
+
+  .ruleEffectContent::before {
+    height: 22cqw;
+
+    box-shadow:
+      0 0 7cqw
+      rgba(0, 0, 0, 0.6);
+  }
+
+  .ruleEffectContent p {
+    font-size: 9cqw;
+
+    text-shadow:
+      0 0.5cqw 0 #4f220c,
+      0 0 1.6cqw
+        rgba(255, 216, 108, 0.75),
+      0 0 5cqw
+        rgba(190, 41, 24, 0.8);
+  }
+
+  .ruleEffectLine {
+    width: 12cqw;
+    height: 0.4cqw;
+  }
+
+  .ruleEffect-eightCut
+    .ruleEffectContent p,
+  .ruleEffect-spadeThree
+    .ruleEffectContent p {
+    text-shadow:
+      0 0.5cqw 0 #711b13,
+      0 0 1.8cqw
+        rgba(255, 239, 177, 0.95),
+      0 0 5.5cqw
+        rgba(255, 55, 39, 0.9);
+  }
+
+  .ruleEffect-gekiShibari
+    .ruleEffectContent p,
+  .ruleEffect-forbiddenFinish
+    .ruleEffectContent p {
+    text-shadow:
+      0 0.5cqw 0 #4b0007,
+      0 0 1.8cqw
+        rgba(255, 65, 82, 0.85),
+      0 0 5.5cqw
+        rgba(180, 0, 22, 0.85);
+  }
+
+  .ruleEffect-capitalFall
+    .ruleEffectContent p {
+    text-shadow:
+      0 0.5cqw 0 #24002f,
+      0 0 1.8cqw
+        rgba(244, 190, 255, 0.95),
+      0 0 6cqw
+        rgba(150, 43, 190, 0.9);
+  }
+}
