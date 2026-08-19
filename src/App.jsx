@@ -201,6 +201,12 @@ function App() {
   const championVoicePlayedRef =
     useRef(false);
 
+  const autoPassTriggeredRef =
+    useRef(false);
+
+  const autoPassActionRef =
+    useRef(null);
+
   const assetPreloadPromiseRef =
     useRef(null);
 
@@ -355,6 +361,8 @@ function App() {
       entryPhase === "playing" &&
       gamePhase === GAME_PHASES.PLAYING,
   });
+
+  autoPassActionRef.current = passTurn;
 
   useEffect(() => {
     if (
@@ -594,6 +602,48 @@ function App() {
     !isAnimating &&
     !isRuleEffectPlaying &&
     !isRoundFinished;
+
+  const shouldAutoPass =
+    entryPhase === "playing" &&
+    gamePhase === GAME_PHASES.PLAYING &&
+    currentPlayerIndex === 0 &&
+    playedCards.length > 0 &&
+    selectedCardIds.length === 0 &&
+    playableCardIds.length === 0 &&
+    !canPlaySelectedCards &&
+    !isAnimating &&
+    !isRuleEffectPlaying &&
+    !isRoundFinished;
+
+  useEffect(() => {
+    if (!shouldAutoPass) {
+      autoPassTriggeredRef.current = false;
+      return undefined;
+    }
+
+    if (autoPassTriggeredRef.current) {
+      return undefined;
+    }
+
+    autoPassTriggeredRef.current = true;
+
+    let completed = false;
+
+    const timerId = window.setTimeout(() => {
+      completed = true;
+      autoPassActionRef.current?.();
+    }, 500);
+
+    return () => {
+      window.clearTimeout(timerId);
+
+      if (!completed) {
+        autoPassTriggeredRef.current = false;
+      }
+    };
+  }, [
+    shouldAutoPass,
+  ]);
 
   const handleTurnTimeout = () => {
     if (!isTurnTimerActive) {
