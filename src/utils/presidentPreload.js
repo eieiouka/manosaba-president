@@ -1,3 +1,8 @@
+import {
+  preloadGameSounds,
+  warmUpGameSounds,
+} from "./gameAudio";
+
 const CARD_RANKS = [
   "A",
   "2",
@@ -60,7 +65,6 @@ const ALL_IMAGE_SOURCES = [
 ];
 
 let imagePreloadPromise = null;
-let audioElements = null;
 let audioWarmUpPromise = null;
 
 function preloadImage(source) {
@@ -85,62 +89,11 @@ export function preloadPresidentAssets() {
       );
   }
 
-  if (!audioElements) {
-    audioElements = AUDIO_SOURCES.map(
-      (source) => {
-        const audio = new Audio();
-
-        audio.preload = "auto";
-        audio.src = source;
-        audio.playsInline = true;
-        audio.load();
-
-        return audio;
-      },
-    );
-  }
+  preloadGameSounds(
+    AUDIO_SOURCES,
+  );
 
   return imagePreloadPromise;
-}
-
-function warmUpAudio(audio) {
-  const originalMuted = audio.muted;
-  const originalVolume = audio.volume;
-
-  audio.muted = true;
-  audio.volume = 0;
-  audio.currentTime = 0;
-
-  let playPromise;
-
-  try {
-    playPromise = audio.play();
-  } catch {
-    audio.muted = originalMuted;
-    audio.volume = originalVolume;
-    return Promise.resolve();
-  }
-
-  return Promise.resolve(playPromise)
-    .catch(() => undefined)
-    .then(
-      () =>
-        new Promise((resolve) => {
-          window.setTimeout(() => {
-            audio.pause();
-
-            try {
-              audio.currentTime = 0;
-            } catch {
-              // 読み込み前なら何もしない。
-            }
-
-            audio.muted = originalMuted;
-            audio.volume = originalVolume;
-            resolve();
-          }, 100);
-        }),
-    );
 }
 
 export function warmUpPresidentAudio() {
@@ -150,8 +103,8 @@ export function warmUpPresidentAudio() {
     return audioWarmUpPromise;
   }
 
-  audioWarmUpPromise = Promise.allSettled(
-    audioElements.map(warmUpAudio),
+  audioWarmUpPromise = warmUpGameSounds(
+    AUDIO_SOURCES,
   );
 
   return audioWarmUpPromise;
