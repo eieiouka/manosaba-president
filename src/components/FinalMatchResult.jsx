@@ -232,7 +232,10 @@ function FinalMatchResult({
 
   return (
     <div className="finalResultOverlay">
-      <section className="finalResultPanel">
+      <section
+        className="finalResultPanel"
+        aria-label="最終結果"
+      >
         <header className="finalResultHeader">
           <span className="finalResultSubTitle">
             PRESIDENT FINAL RESULT
@@ -252,32 +255,27 @@ function FinalMatchResult({
             CHAMPION
           </span>
 
-          <div className="finalChampionPlayers">
+          <strong className="finalChampionName">
             {champions.map(
               (player) => (
-                <div
-                  className="finalChampionPlayer"
-                  key={
-                    player.id
-                  }
+                <span
+                  className="finalChampionNamePlayer"
+                  key={player.id}
                 >
-                  <img
-                    src={
-                      player.image
-                    }
-                    alt=""
-                    draggable="false"
-                  />
-
-                  <strong>
-                    {
-                      player.name
-                    }
-                  </strong>
-                </div>
+                  {player.playerIndex === 0 ? (
+                    <>
+                      黒部ナノカ
+                      <span className="youLabel">
+                        （You）
+                      </span>
+                    </>
+                  ) : (
+                    player.name
+                  )}
+                </span>
               ),
             )}
-          </div>
+          </strong>
 
           <span
             className={`finalChampionScore ${getScoreClass(
@@ -323,13 +321,20 @@ function FinalMatchResult({
                   />
 
                   <strong className="finalRankingPlayerName">
-                    {player.name}
+                    {player.playerIndex === 0 ? (
+                      <>
+                        <span>
+                          黒部ナノカ
+                        </span>
 
-                    {player.playerIndex ===
-                      0 && (
                       <small>
                         （You）
                       </small>
+                      </>
+                    ) : (
+                      <span>
+                        {player.name}
+                      </span>
                     )}
                   </strong>
                 </div>
@@ -359,7 +364,7 @@ function FinalMatchResult({
 
           <div className="finalRoundHistoryTable">
             <div className="finalHistoryCorner">
-              PLAYER
+              プレイヤー
             </div>
 
             {Array.from({
@@ -379,7 +384,7 @@ function FinalMatchResult({
             )}
 
             <div className="finalHistoryTotalHeader">
-              TOTAL
+              合計
             </div>
 
             {players.map(
@@ -394,19 +399,9 @@ function FinalMatchResult({
                   }
                 >
                   <div className="finalHistoryPlayerName">
-                    <img
-                      src={
-                        player.image
-                      }
-                      alt=""
-                      draggable="false"
-                    />
-
-                    <span>
-                      {
-                        player.name
-                      }
-                    </span>
+                    {playerIndex === 0
+                      ? "黒部ナノカ（You）"
+                      : player.name}
                   </div>
 
                   {Array.from({

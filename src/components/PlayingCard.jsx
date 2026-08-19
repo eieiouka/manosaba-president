@@ -75,7 +75,7 @@ function PlayingCard({
     const touchX =
       touch.clientX - trackRect.left;
 
-    const touchedCard =
+    let touchedCard =
       cardElements.find(
         (_, cardIndex) => {
           const nextCard =
@@ -93,6 +93,75 @@ function PlayingCard({
           );
         },
       );
+
+    /*
+      選択済みカードの境界付近では、
+      隣にある未選択の赤いカードを
+      少し広めに拾う。
+
+      重なった手札でも、ペアの2枚目を
+      選びやすくするためのスマホ専用補助。
+    */
+    if (
+      touchedCard?.classList.contains(
+        "selectedCard",
+      )
+    ) {
+      const touchedIndex =
+        cardElements.indexOf(
+          touchedCard,
+        );
+
+      const previousCard =
+        cardElements[
+          touchedIndex - 1
+        ];
+
+      const nextCard =
+        cardElements[
+          touchedIndex + 1
+        ];
+
+      const touchAssistWidth =
+        Math.max(
+          18,
+          touchedCard.getBoundingClientRect()
+            .width * 0.12,
+        );
+
+      const isUnselectedPlayable =
+        (cardElement) =>
+          Boolean(cardElement) &&
+          !cardElement.classList.contains(
+            "selectedCard",
+          ) &&
+          (cardElement.classList.contains(
+            "playableCard",
+          ) ||
+            cardElement.classList.contains(
+              "exchangePlayableCard",
+            ));
+
+      if (
+        isUnselectedPlayable(
+          previousCard,
+        ) &&
+        touchX <=
+          touchedCard.offsetLeft +
+            touchAssistWidth
+      ) {
+        touchedCard = previousCard;
+      } else if (
+        isUnselectedPlayable(
+          nextCard,
+        ) &&
+        touchX >=
+          nextCard.offsetLeft -
+            touchAssistWidth
+      ) {
+        touchedCard = nextCard;
+      }
+    }
 
     if (
       !touchedCard ||

@@ -4231,3 +4231,675 @@ button {
     font-size: 3.5cqw;
   }
 }
+
+/* =========================================
+   七並べ型：7戦終了後の最終結果
+   ========================================= */
+
+.finalResultOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 24px;
+
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(55, 85, 75, 0.35),
+      rgba(4, 10, 12, 0.92)
+    );
+
+  backdrop-filter: blur(8px);
+}
+
+.finalResultPanel {
+  width: min(1180px, 95vw);
+  max-height: 94vh;
+
+  padding:
+    42px
+    48px
+    38px;
+
+  overflow-y: auto;
+
+  color: #f7f0dc;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(24, 48, 43, 0.98),
+      rgba(8, 22, 25, 0.98)
+    );
+
+  border: 3px solid #d8bd72;
+  border-radius: 28px;
+
+  box-shadow:
+    0 0 0 6px
+      rgba(216, 189, 114, 0.12),
+    0 28px 80px
+      rgba(0, 0, 0, 0.65),
+    inset 0 0 50px
+      rgba(255, 230, 160, 0.05);
+
+  animation: none;
+}
+
+.finalResultHeader {
+  text-align: center;
+}
+
+.finalResultSubTitle {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: #d8bd72;
+
+  font-family:
+    "Cormorant Garamond",
+    serif;
+
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+}
+
+.finalResultHeader h2 {
+  margin: 0;
+
+  color: inherit;
+
+  font-family:
+    "Cormorant Garamond",
+    serif;
+
+  font-size: 58px;
+  line-height: 1;
+  letter-spacing: 0.08em;
+}
+
+.finalResultHeader p {
+  margin: 10px 0 0;
+
+  color:
+    rgba(247, 240, 220, 0.65);
+
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.finalChampionArea {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  margin: 30px auto;
+
+  padding: 24px;
+
+  border:
+    2px solid
+    rgba(235, 205, 118, 0.75);
+
+  border-radius: 22px;
+
+  background:
+    radial-gradient(
+      circle at top,
+      rgba(235, 205, 118, 0.2),
+      rgba(235, 205, 118, 0.04)
+    );
+
+  box-shadow:
+    inset 0 0 32px
+      rgba(235, 205, 118, 0.08),
+    0 12px 30px
+      rgba(0, 0, 0, 0.25);
+}
+
+.finalChampionLabel {
+  color: #ead078;
+
+  font-family:
+    "Cormorant Garamond",
+    serif;
+
+  font-size: 20px;
+  font-weight: 800;
+  letter-spacing: 0.3em;
+}
+
+.finalChampionName {
+  margin-top: 7px;
+
+  font-size: 34px;
+  letter-spacing: 0.08em;
+}
+
+.finalChampionNamePlayer,
+.youLabel {
+  display: inline;
+}
+
+.finalChampionScore {
+  margin-top: 4px;
+
+  color: #f3d77f;
+
+  font-size: 23px;
+  font-weight: 900;
+}
+
+.finalRanking {
+  display: grid;
+  gap: 10px;
+}
+
+.finalRankingRow {
+  display: grid;
+
+  grid-template-columns:
+    100px
+    1fr
+    180px;
+
+  align-items: center;
+
+  min-height: 76px;
+
+  padding:
+    0
+    24px;
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.13);
+
+  border-radius: 17px;
+
+  background:
+    rgba(255, 255, 255, 0.055);
+}
+
+.finalRankingRow.finalRank1 {
+  border-color:
+    rgba(235, 205, 118, 0.8);
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(235, 205, 118, 0.18),
+      rgba(255, 255, 255, 0.04)
+    );
+}
+
+.finalRankingPosition {
+  display: flex;
+  align-items: baseline;
+
+  color: #dfc674;
+}
+
+.finalRankingPosition span {
+  font-family:
+    "Cormorant Garamond",
+    serif;
+
+  font-size: 42px;
+  font-weight: 900;
+}
+
+.finalRankingPosition small {
+  margin-left: 4px;
+
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.finalRankingPlayer {
+  display: flex;
+  align-items: center;
+
+  gap: 15px;
+
+  font-size: 22px;
+}
+
+.finalRankingPlayerIllustration {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.finalRankingPlayerName {
+  color: inherit;
+
+  font-family: inherit;
+  font-size: inherit;
+  letter-spacing: normal;
+}
+
+.finalRankingPlayerName small {
+  margin-left: 0;
+
+  color: inherit;
+
+  font-size: 0.7em;
+}
+
+.finalRankingScore {
+  text-align: right;
+
+  font-family: inherit;
+  font-size: 29px;
+  font-weight: 900;
+}
+
+.finalRankingScore small {
+  margin-left: 5px;
+  font-size: 15px;
+}
+
+.finalRoundHistory {
+  margin-top: 34px;
+}
+
+.finalRoundHistory h3 {
+  margin: 0 0 14px;
+
+  color: #e7d59d;
+
+  font-size: 21px;
+  letter-spacing: 0.1em;
+}
+
+.finalRoundHistoryTable {
+  display: grid;
+
+  grid-template-columns:
+    minmax(150px, 1.6fr)
+    repeat(7, minmax(55px, 0.7fr))
+    minmax(76px, 0.9fr);
+
+  overflow: hidden;
+
+  border:
+    1px solid
+    rgba(216, 189, 114, 0.42);
+
+  border-radius: 15px;
+}
+
+.finalHistoryPlayerRow {
+  display: contents;
+}
+
+.finalHistoryCorner,
+.finalHistoryRoundHeader,
+.finalHistoryTotalHeader,
+.finalHistoryPlayerName,
+.finalHistoryScore,
+.finalHistoryTotal {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 48px;
+
+  border-right:
+    1px solid
+    rgba(255, 255, 255, 0.09);
+
+  border-bottom:
+    1px solid
+    rgba(255, 255, 255, 0.09);
+}
+
+.finalHistoryCorner,
+.finalHistoryRoundHeader,
+.finalHistoryTotalHeader {
+  min-height: 48px;
+
+  color: #ddc77e;
+  background:
+    rgba(216, 189, 114, 0.12);
+
+  font-size: inherit;
+  font-weight: 900;
+}
+
+.finalHistoryPlayerName {
+  justify-content: flex-start;
+
+  gap: 0;
+
+  padding:
+    0
+    0
+    0
+    17px;
+
+  color: inherit;
+
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 800;
+}
+
+.finalHistoryScore,
+.finalHistoryTotal {
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 900;
+}
+
+.finalHistoryTotal {
+  background:
+    rgba(216, 189, 114, 0.08);
+
+  font-size: 18px;
+}
+
+.finalResultFooter {
+  display: flex;
+  justify-content: center;
+
+  gap: 18px;
+
+  margin-top: 34px;
+}
+
+.finalResultFooter button {
+  min-width: 210px;
+  min-height: 56px;
+
+  padding: 0;
+
+  border-radius: 999px;
+
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: normal;
+
+  cursor: pointer;
+
+  transition:
+    transform 150ms ease,
+    filter 150ms ease;
+}
+
+.finalResultFooter button:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.finalResultHubButton {
+  color: #f7f0dc;
+  background:
+    rgba(255, 255, 255, 0.08);
+
+  border:
+    1px solid
+    rgba(255, 255, 255, 0.28);
+}
+
+.finalResultRestartButton {
+  color: #172522;
+
+  background:
+    linear-gradient(
+      180deg,
+      #f3dc8d,
+      #cba64e
+    );
+
+  border: 1px solid #efd780;
+
+  box-shadow:
+    0 8px 20px
+    rgba(203, 166, 78, 0.25);
+}
+
+@media (max-width: 600px) {
+  .finalResultOverlay {
+    padding: 3vw;
+  }
+
+  .finalResultPanel {
+    width: 100%;
+    max-width: none;
+
+    padding:
+      6vw
+      2.5vw
+      7vw;
+
+    overflow-x: hidden;
+
+    border-width: 2px;
+    border-radius: 6vw;
+  }
+
+  .finalResultHeader h2 {
+    font-size:
+      clamp(32px, 10vw, 44px);
+
+    line-height: 1;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+
+  .finalChampionName {
+    width: 100%;
+
+    font-size:
+      clamp(24px, 8vw, 34px);
+
+    line-height: 1.15;
+    text-align: center;
+  }
+
+  .finalChampionNamePlayer {
+    display: inline;
+  }
+
+  .youLabel {
+    display: block;
+
+    margin-top: 1.2vw;
+
+    font-size: 0.55em;
+    line-height: 1;
+    text-align: center;
+  }
+
+  .finalRanking {
+    width: 100%;
+    min-width: 0;
+
+    margin: 0;
+
+    gap: 2.8vw;
+  }
+
+  .finalRankingRow {
+    width: 100%;
+    min-width: 0;
+    min-height: 23vw;
+
+    grid-template-columns:
+      clamp(58px, 18vw, 78px)
+      minmax(0, 1fr);
+
+    grid-template-rows:
+      auto
+      auto;
+
+    align-items: center;
+
+    padding:
+      3vw
+      3.5vw;
+  }
+
+  .finalRankingPosition {
+    grid-column: 1;
+    grid-row: 1 / 3;
+
+    justify-content: center;
+    align-self: center;
+  }
+
+  .finalRankingPosition span {
+    font-size:
+      clamp(30px, 9vw, 42px);
+  }
+
+  .finalRankingPosition small {
+    margin-left: 1vw;
+
+    font-size:
+      clamp(13px, 3.7vw, 16px);
+  }
+
+  .finalRankingPlayer {
+    grid-column: 2;
+    grid-row: 1;
+
+    width: 100%;
+    min-width: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap:
+      clamp(8px, 2.5vw, 12px);
+
+    padding: 0;
+
+    font-size:
+      clamp(17px, 5.2vw, 24px);
+
+    line-height: 1.1;
+  }
+
+  .finalRankingPlayerIllustration {
+    width:
+      clamp(34px, 10vw, 44px);
+
+    height:
+      clamp(34px, 10vw, 44px);
+
+    flex: 0 0 auto;
+
+    margin: 0;
+
+    object-fit: cover;
+    border-radius: 50%;
+
+    transform: none;
+  }
+
+  .finalRankingPlayerName {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+    line-height: 1.15;
+  }
+
+  .finalRankingPlayerName > span {
+    display: block;
+    width: 100%;
+
+    text-align: center;
+    white-space: nowrap;
+    word-break: keep-all;
+  }
+
+  .finalRankingPlayerName > small {
+    display: block;
+
+    margin-top: 1vw;
+
+    font-size: 0.68em;
+    font-weight: 900;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .finalRankingScore {
+    grid-column: 2;
+    grid-row: 2;
+
+    width: 100%;
+
+    margin-top: 1.5vw;
+    padding: 0;
+
+    text-align: center;
+
+    font-size:
+      clamp(19px, 5.5vw, 25px);
+
+    line-height: 1;
+  }
+
+  .finalRankingScore small {
+    margin-left: 1vw;
+    font-size: 0.6em;
+  }
+
+  .finalRoundHistory {
+    display: none;
+  }
+
+  .finalResultFooter {
+    width: 100%;
+    min-width: 0;
+
+    display: grid;
+
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(0, 1fr);
+
+    gap: 3vw;
+
+    margin-top: 7vw;
+  }
+
+  .finalResultFooter button {
+    width: 100%;
+    min-width: 0;
+    min-height:
+      clamp(48px, 14vw, 58px);
+
+    padding:
+      0
+      2vw;
+
+    font-size:
+      clamp(14px, 4.2vw, 18px);
+
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+}
