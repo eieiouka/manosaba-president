@@ -22,6 +22,7 @@ import useCardAnimation from "./hooks/useCardAnimation";
 import useCardExchangeAnimation from "./hooks/useCardExchangeAnimation";
 import useGameScale from "./hooks/useGameScale";
 import usePresidentGame from "./hooks/usePresidentGame";
+import usePlayerTurnTimer from "./hooks/usePlayerTurnTimer";
 
 import {
   createExchangedHands,
@@ -214,6 +215,18 @@ function App() {
   const [gamePhase, setGamePhase] =
     useState(GAME_PHASES.PLAYING);
 
+  /*
+    各回戦で、ナノカがすでに
+    最初の手番を終えたか。
+
+    CPUが先にカードを出していても、
+    ナノカ自身の初手番は無制限にする。
+  */
+  const [
+    hasPlayerTakenFirstTurn,
+    setHasPlayerTakenFirstTurn,
+  ] = useState(false);
+
   useEffect(() => {
     assetPreloadPromiseRef.current =
       preloadPresidentAssets();
@@ -331,6 +344,7 @@ function App() {
 
     toggleCardSelection,
     playSelectedCards,
+    playLeftmostCard,
     passTurn,
     startNextRound,
     completeCardExchange,
@@ -547,6 +561,8 @@ function App() {
       return;
     }
 
+    setHasPlayerTakenFirstTurn(true);
+
     animateCards({
       cards:
         selectedCards,
@@ -565,8 +581,54 @@ function App() {
       return;
     }
 
+    setHasPlayerTakenFirstTurn(true);
+
     passTurn();
   };
+
+  const isTurnTimerActive =
+    entryPhase === "playing" &&
+    gamePhase === GAME_PHASES.PLAYING &&
+    currentPlayerIndex === 0 &&
+    hasPlayerTakenFirstTurn &&
+    !isAnimating &&
+    !isRuleEffectPlaying &&
+    !isRoundFinished;
+
+  const handleTurnTimeout = () => {
+    if (!isTurnTimerActive) {
+      return;
+    }
+
+    /*
+      子の時間切れは強制PASS。
+    */
+    if (playedCards.length > 0) {
+      handlePassTurn();
+      return;
+    }
+
+    /*
+      親の時間切れは、手札の一番左を
+      選択状態に関係なく1枚だけ出す。
+    */
+    const leftmostCard = hand[0];
+
+    if (!leftmostCard) {
+      return;
+    }
+
+    animateCards({
+      cards: [leftmostCard],
+      onLanding: playLeftmostCard,
+    });
+  };
+
+  const turnSeconds =
+    usePlayerTurnTimer({
+      active: isTurnTimerActive,
+      onTimeout: handleTurnTimeout,
+    });
 
   const handleToggleCard = (
     card,
@@ -692,6 +754,12 @@ function App() {
     );
 
     setExchangeSelectedCardIds([]);
+
+    /*
+      次の回戦では、ナノカに最初に
+      回ってくる手番を再び無制限にする。
+    */
+    setHasPlayerTakenFirstTurn(false);
 
     /*
       ROUNDを進める。
@@ -1114,6 +1182,11 @@ function App() {
                   }
                   canPass={
                     canPass
+                  }
+                  turnSeconds={
+                    isTurnTimerActive
+                      ? turnSeconds
+                      : null
                   }
                   onPlayCard={
                     handlePlayCard

@@ -1,6 +1,7 @@
 function TurnControls({
   canPlay,
   canPass,
+  turnSeconds = null,
   onPlayCard,
   onPassTurn,
 }) {
@@ -23,7 +24,7 @@ function TurnControls({
         </span>
 
         <strong className="turnCountdown">
-          －
+          {turnSeconds ?? "－"}
         </strong>
 
         <span className="turnCountdownUnit">

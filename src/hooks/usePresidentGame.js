@@ -830,6 +830,46 @@ export default function usePresidentGame({
     setSelectedCardIds([]);
   }
 
+  /*
+    親の時間切れ専用。
+
+    選択状態を経由せず、現在の手札の
+    一番左にあるカードを1枚だけ出す。
+    場にカードがある時には実行しない。
+  */
+  function playLeftmostCard() {
+    if (
+      !isGameActive ||
+      currentPlayerIndex !== 0 ||
+      playedCards.length > 0 ||
+      hand.length === 0 ||
+      isRoundFinished ||
+      isRuleEffectPlaying
+    ) {
+      return;
+    }
+
+    const leftmostCard = hand[0];
+    const cardsToPlay = [leftmostCard];
+
+    commitPlay({
+      playerIndex: 0,
+      play: {
+        cards: cardsToPlay,
+        cardIds: [leftmostCard.id],
+        analysis: analyzePlay(
+          cardsToPlay,
+          {
+            revolution,
+            elevenBack,
+          },
+        ),
+      },
+    });
+
+    setSelectedCardIds([]);
+  }
+
   return {
     hands,
     hand,
@@ -874,6 +914,7 @@ export default function usePresidentGame({
 
     toggleCardSelection,
     playSelectedCards,
+    playLeftmostCard,
     passTurn,
 
     startNextRound,
