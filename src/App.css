@@ -2952,6 +2952,10 @@ button {
 }
 
 .exchangeButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
   border-color: #84ffc0;
 
   color: #10291d;
@@ -2971,6 +2975,15 @@ button {
       rgba(46, 224, 132, 0.58),
     0 0.7cqw 1.4cqw
       rgba(0, 0, 0, 0.3);
+}
+
+.exchangeButton
+  .playButtonLabel {
+  margin: 0;
+
+  font-size: 2.25cqw;
+  line-height: 1;
+  letter-spacing: 0.15em;
 }
 
 .exchangeButton:disabled {
@@ -3500,6 +3513,13 @@ button {
   .exchangeActionButtons button {
     grid-column: 1;
     width: 100%;
+  }
+
+  .exchangeButton
+    .playButtonLabel {
+    margin: 0;
+
+    font-size: 6cqw;
   }
 }
 

@@ -13,14 +13,6 @@ function CardExchangeControls({
         <span className="playButtonLabel">
           交換
         </span>
-
-        <strong className="turnCountdown">
-          －
-        </strong>
-
-        <span className="turnCountdownUnit">
-          秒
-        </span>
       </button>
     </div>
   );
