@@ -585,6 +585,24 @@ button {
   background: transparent;
 
   box-shadow: none;
+
+  animation:
+    fieldCardReveal
+    160ms
+    ease-out
+    both;
+}
+
+@keyframes fieldCardReveal {
+  from {
+    opacity: 0.55;
+    filter: brightness(0.72);
+  }
+
+  to {
+    opacity: 1;
+    filter: brightness(1);
+  }
 }
 
 .fieldCard img {
