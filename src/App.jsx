@@ -198,6 +198,7 @@ function calculateGameScale() {
 }
 
 function App() {
+  const autoPassActionRef = useRef(null);
   const [isMobileLayout, setIsMobileLayout] =
     useState(() =>
       window.matchMedia("(max-width: 600px)").matches,
@@ -603,6 +604,38 @@ function App() {
 
     passTurn();
   };
+
+  autoPassActionRef.current =
+    handlePassTurn;
+
+  const shouldAutoPass =
+    entryPhase === "playing" &&
+    gamePhase === GAME_PHASES.PLAYING &&
+    currentPlayerIndex === 0 &&
+    playedCards.length > 0 &&
+    selectedCardIds.length === 0 &&
+    playableCardIds.length === 0 &&
+    !canPlaySelectedCards &&
+    !isAnimating &&
+    !isRuleEffectPlaying &&
+    !isRoundFinished;
+
+  useEffect(() => {
+    if (!shouldAutoPass) {
+      return undefined;
+    }
+
+    const timerId = window.setTimeout(
+      () => {
+        autoPassActionRef.current?.();
+      },
+      600,
+    );
+
+    return () => {
+      window.clearTimeout(timerId);
+    };
+  }, [shouldAutoPass]);
 
   const isTurnTimerActive =
     entryPhase === "playing" &&
