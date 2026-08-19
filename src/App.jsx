@@ -22,7 +22,6 @@ import useCardAnimation from "./hooks/useCardAnimation";
 import useCardExchangeAnimation from "./hooks/useCardExchangeAnimation";
 import useGameScale from "./hooks/useGameScale";
 import usePresidentGame from "./hooks/usePresidentGame";
-import usePlayerTurnTimer from "./hooks/usePlayerTurnTimer";
 
 import {
   createExchangedHands,
@@ -198,14 +197,36 @@ function calculateGameScale() {
 }
 
 function App() {
+  const [isMobileLayout, setIsMobileLayout] =
+    useState(() =>
+      window.matchMedia("(max-width: 600px)").matches,
+    );
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia(
+      "(max-width: 600px)",
+    );
+
+    const updateMobileLayout = (event) => {
+      setIsMobileLayout(event.matches);
+    };
+
+    setIsMobileLayout(mediaQuery.matches);
+    mediaQuery.addEventListener(
+      "change",
+      updateMobileLayout,
+    );
+
+    return () => {
+      mediaQuery.removeEventListener(
+        "change",
+        updateMobileLayout,
+      );
+    };
+  }, []);
+
   const championVoicePlayedRef =
     useRef(false);
-
-  const autoPassTriggeredRef =
-    useRef(false);
-
-  const autoPassActionRef =
-    useRef(null);
 
   const assetPreloadPromiseRef =
     useRef(null);
@@ -213,25 +234,10 @@ function App() {
   const [entryPhase, setEntryPhase] =
     useState("start");
 
-  const [
-    debugMode,
-    setDebugMode,
-  ] = useState(false);
+  const debugMode = false;
 
   const [gamePhase, setGamePhase] =
     useState(GAME_PHASES.PLAYING);
-
-  /*
-    各回戦で、ナノカがすでに
-    最初の手番を終えたか。
-
-    CPUが先にカードを出していても、
-    ナノカ自身の初手番は無制限にする。
-  */
-  const [
-    hasPlayerTakenFirstTurn,
-    setHasPlayerTakenFirstTurn,
-  ] = useState(false);
 
   useEffect(() => {
     assetPreloadPromiseRef.current =
@@ -350,7 +356,6 @@ function App() {
 
     toggleCardSelection,
     playSelectedCards,
-    playLeftmostCard,
     passTurn,
     startNextRound,
     completeCardExchange,
@@ -361,8 +366,6 @@ function App() {
       entryPhase === "playing" &&
       gamePhase === GAME_PHASES.PLAYING,
   });
-
-  autoPassActionRef.current = passTurn;
 
   useEffect(() => {
     if (
@@ -569,8 +572,6 @@ function App() {
       return;
     }
 
-    setHasPlayerTakenFirstTurn(true);
-
     animateCards({
       cards:
         selectedCards,
@@ -589,96 +590,8 @@ function App() {
       return;
     }
 
-    setHasPlayerTakenFirstTurn(true);
-
     passTurn();
   };
-
-  const isTurnTimerActive =
-    entryPhase === "playing" &&
-    gamePhase === GAME_PHASES.PLAYING &&
-    currentPlayerIndex === 0 &&
-    hasPlayerTakenFirstTurn &&
-    !isAnimating &&
-    !isRuleEffectPlaying &&
-    !isRoundFinished;
-
-  const shouldAutoPass =
-    entryPhase === "playing" &&
-    gamePhase === GAME_PHASES.PLAYING &&
-    currentPlayerIndex === 0 &&
-    playedCards.length > 0 &&
-    selectedCardIds.length === 0 &&
-    playableCardIds.length === 0 &&
-    !canPlaySelectedCards &&
-    !isAnimating &&
-    !isRuleEffectPlaying &&
-    !isRoundFinished;
-
-  useEffect(() => {
-    if (!shouldAutoPass) {
-      autoPassTriggeredRef.current = false;
-      return undefined;
-    }
-
-    if (autoPassTriggeredRef.current) {
-      return undefined;
-    }
-
-    autoPassTriggeredRef.current = true;
-
-    let completed = false;
-
-    const timerId = window.setTimeout(() => {
-      completed = true;
-      autoPassActionRef.current?.();
-    }, 500);
-
-    return () => {
-      window.clearTimeout(timerId);
-
-      if (!completed) {
-        autoPassTriggeredRef.current = false;
-      }
-    };
-  }, [
-    shouldAutoPass,
-  ]);
-
-  const handleTurnTimeout = () => {
-    if (!isTurnTimerActive) {
-      return;
-    }
-
-    /*
-      子の時間切れは強制PASS。
-    */
-    if (playedCards.length > 0) {
-      handlePassTurn();
-      return;
-    }
-
-    /*
-      親の時間切れは、手札の一番左を
-      選択状態に関係なく1枚だけ出す。
-    */
-    const leftmostCard = hand[0];
-
-    if (!leftmostCard) {
-      return;
-    }
-
-    animateCards({
-      cards: [leftmostCard],
-      onLanding: playLeftmostCard,
-    });
-  };
-
-  const turnSeconds =
-    usePlayerTurnTimer({
-      active: isTurnTimerActive,
-      onTimeout: handleTurnTimeout,
-    });
 
   const handleToggleCard = (
     card,
@@ -806,12 +719,6 @@ function App() {
     setExchangeSelectedCardIds([]);
 
     /*
-      次の回戦では、ナノカに最初に
-      回ってくる手番を再び無制限にする。
-    */
-    setHasPlayerTakenFirstTurn(false);
-
-    /*
       ROUNDを進める。
     */
     setRoundNumber(
@@ -920,22 +827,36 @@ function App() {
   return (
     <main className="gamePage">
       <div
-        className="gameFrame"
+        className={`gameFrame ${
+          isMobileLayout
+            ? "mobileGameFrame"
+            : ""
+        }`}
         style={{
           width:
-            GAME_WIDTH *
-            gameScale,
+            isMobileLayout
+              ? "100%"
+              : GAME_WIDTH *
+                gameScale,
 
           height:
-            GAME_HEIGHT *
-            gameScale,
+            isMobileLayout
+              ? "auto"
+              : GAME_HEIGHT *
+                gameScale,
         }}
       >
         <div
-          className="gameCanvas"
+          className={`gameCanvas ${
+            isMobileLayout
+              ? "mobileGameCanvas"
+              : ""
+          }`}
           style={{
             transform:
-              `scale(${gameScale})`,
+              isMobileLayout
+                ? "none"
+                : `scale(${gameScale})`,
           }}
         >
           <header className="gameHeader">
@@ -980,73 +901,6 @@ function App() {
                 activeRuleEffect
               }
             />
-
-            {/*
-              DEBUG
-            */}
-            <button
-              type="button"
-              onClick={() => {
-                setDebugMode(
-                  (current) =>
-                    !current,
-                );
-              }}
-              style={{
-                position:
-                  "absolute",
-
-                top:
-                  "20px",
-
-                left:
-                  "20px",
-
-                zIndex:
-                  100,
-
-                width:
-                  "120px",
-
-                height:
-                  "42px",
-
-                border:
-                  debugMode
-                    ? "2px solid #ff4055"
-                    : "1px solid rgba(211, 174, 96, 0.7)",
-
-                borderRadius:
-                  "8px",
-
-                background:
-                  debugMode
-                    ? "rgba(100, 15, 25, 0.95)"
-                    : "rgba(15, 8, 10, 0.9)",
-
-                color:
-                  debugMode
-                    ? "#ff7080"
-                    : "#d3ae60",
-
-                fontSize:
-                  "14px",
-
-                fontWeight:
-                  "700",
-
-                cursor:
-                  "pointer",
-
-                letterSpacing:
-                  "0.08em",
-              }}
-            >
-              DEBUG{" "}
-              {debugMode
-                ? "ON"
-                : "OFF"}
-            </button>
 
             {/*
               ROUND
@@ -1232,11 +1086,6 @@ function App() {
                   }
                   canPass={
                     canPass
-                  }
-                  turnSeconds={
-                    isTurnTimerActive
-                      ? turnSeconds
-                      : null
                   }
                   onPlayCard={
                     handlePlayCard
