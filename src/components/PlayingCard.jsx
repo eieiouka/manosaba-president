@@ -42,6 +42,70 @@ function PlayingCard({
     onToggle(card);
   };
 
+  const handleTouchEnd = (event) => {
+    if (
+      !window.matchMedia(
+        "(max-width: 600px)",
+      ).matches
+    ) {
+      return;
+    }
+
+    const touch =
+      event.changedTouches[0];
+
+    const handTrack =
+      event.currentTarget.closest(
+        ".playerHandTrack",
+      );
+
+    if (!touch || !handTrack) {
+      return;
+    }
+
+    const cardElements = [
+      ...handTrack.querySelectorAll(
+        ".playingCard",
+      ),
+    ];
+
+    const trackRect =
+      handTrack.getBoundingClientRect();
+
+    const touchX =
+      touch.clientX - trackRect.left;
+
+    const touchedCard =
+      cardElements.find(
+        (_, cardIndex) => {
+          const nextCard =
+            cardElements[
+              cardIndex + 1
+            ];
+
+          if (!nextCard) {
+            return true;
+          }
+
+          return (
+            touchX <
+            nextCard.offsetLeft
+          );
+        },
+      );
+
+    if (
+      !touchedCard ||
+      touchedCard ===
+        event.currentTarget
+    ) {
+      return;
+    }
+
+    event.preventDefault();
+    touchedCard.click();
+  };
+
   return (
     <button
       className={`playingCard ${
@@ -61,6 +125,9 @@ function PlayingCard({
       aria-disabled={
         !selected &&
         !playable
+      }
+      onTouchEnd={
+        handleTouchEnd
       }
       onClick={handleClick}
     >
