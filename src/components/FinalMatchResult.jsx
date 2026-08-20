@@ -255,27 +255,37 @@ function FinalMatchResult({
             CHAMPION
           </span>
 
-          <strong className="finalChampionName">
+          <div className="finalChampionPlayers">
             {champions.map(
               (player) => (
-                <span
-                  className="finalChampionNamePlayer"
+                <div
+                  className="finalChampionPlayer"
                   key={player.id}
                 >
-                  {player.playerIndex === 0 ? (
-                    <>
-                      黒部ナノカ
-                      <span className="youLabel">
-                        （You）
-                      </span>
-                    </>
-                  ) : (
-                    player.name
-                  )}
-                </span>
+                  <img
+                    src={player.image}
+                    alt={player.name}
+                    draggable="false"
+                  />
+
+                  <strong className="finalChampionName">
+                    <span className="finalChampionNamePlayer">
+                      {player.playerIndex === 0 ? (
+                        <>
+                          黒部ナノカ
+                          <span className="youLabel">
+                            （You）
+                          </span>
+                        </>
+                      ) : (
+                        player.name
+                      )}
+                    </span>
+                  </strong>
+                </div>
               ),
             )}
-          </strong>
+          </div>
 
           <span
             className={`finalChampionScore ${getScoreClass(
