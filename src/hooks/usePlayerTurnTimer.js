@@ -4,7 +4,7 @@ import {
   useState,
 } from "react";
 
-const TURN_LIMIT_SECONDS = 5;
+const TURN_LIMIT_SECONDS = 10;
 
 export default function usePlayerTurnTimer({
   active,
